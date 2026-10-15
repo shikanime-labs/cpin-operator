@@ -1,0 +1,126 @@
+# Keycloak provisioning program for cpin-operator.
+#
+# Stand-in resources typed cpin:keycloak:Artifact; a real Keycloak provider
+# replaces them later without changing the desired-state shape. Semantics come
+# from the console keycloak audit (docs/audit/keycloak.md):
+#
+# - Top group /{slug}: members = Set([ownerId, ...memberIds]); connectivity
+#   anchor only — membership inherited downward, grants nothing by itself.
+# - Console subgroup /{slug}/console: fixed name, parent anchor for role
+#   groups, ownership marker for orphan purge.
+# - Role groups /{slug}/console/{role}: seeded roles admin, devops, developer,
+#   readonly; desired membership synced add-only with conflict tolerance
+#   (404 skip / 409 idempotent). Owner is seeded into admin.
+# - Admin-role groups AdminRole.oidcGroup (/admin, /console/reader, ...):
+#   managed roles only; desired set from UserWithAdminRoles, absent managed
+#   members purged. Orphan purge itself stays drift detection, not a resource.
+name: cpin-program-keycloak
+description: Keycloak group tree provisioning from the console keycloak audit
+runtime: yaml
+
+config:
+  projectName:
+    type: String
+  projectSlug:
+    type: String
+  projectOwner:
+    type: String
+
+resources:
+  # /{slug} — top group; members = owner + project members (anchor only).
+  topGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: group
+      path: "/${projectSlug}"
+      members: ["${projectOwner}"]
+      options:
+        note: connectivity anchor; membership inherited downward, grants nothing by itself
+
+  # /{slug}/console — fixed-name subgroup; role-group parent + orphan-purge marker.
+  consoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: group
+      path: "/${projectSlug}/console"
+      parent: "${topGroup.path}"
+      options:
+        note: fixed name; ownership marker for orphan purge
+
+  # /{slug}/console/{role} — seeded role groups. Member sync is add-only with
+  # conflict tolerance: 404 (user gone) warn+skip, 409 (already member) ok.
+  adminRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: role-group
+      path: "${consoleGroup.path}/admin"
+      parent: "${consoleGroup.path}"
+      members: ["${projectOwner}"]
+      options:
+        roleType: managed
+        note: owner seeded as admin
+
+  devopsRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: role-group
+      path: "${consoleGroup.path}/devops"
+      parent: "${consoleGroup.path}"
+      members: []
+      options:
+        roleType: managed
+
+  developerRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: role-group
+      path: "${consoleGroup.path}/developer"
+      parent: "${consoleGroup.path}"
+      members: []
+      options:
+        roleType: managed
+
+  readonlyRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: role-group
+      path: "${consoleGroup.path}/readonly"
+      parent: "${consoleGroup.path}"
+      members: []
+      options:
+        roleType: managed
+
+  # AdminRole.oidcGroup platform groups, managed roles only. Desired members
+  # from UserWithAdminRoles; managed members absent from desired are purged.
+  # Seeded empty: populated by admin-role upsert events, not project create.
+  adminAdminRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: admin-role-group
+      path: /admin
+      members: []
+      options:
+        roleType: managed
+        note: desired set from UserWithAdminRoles; purge managed members absent from desired
+
+  consoleReaderAdminRoleGroup:
+    type: cpin:keycloak:Artifact
+    properties:
+      kind: admin-role-group
+      path: /console/reader
+      members: []
+      options:
+        roleType: managed
+        note: desired set from UserWithAdminRoles; purge managed members absent from desired
+
+outputs:
+  topGroupPath: "${topGroup.path}"
+  consoleGroupPath: "${consoleGroup.path}"
+  roleGroupPaths:
+    - "${adminRoleGroup.path}"
+    - "${devopsRoleGroup.path}"
+    - "${developerRoleGroup.path}"
+    - "${readonlyRoleGroup.path}"
+  adminRoleGroupPaths:
+    - "${adminAdminRoleGroup.path}"
+    - "${consoleReaderAdminRoleGroup.path}"
