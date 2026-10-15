@@ -1,0 +1,30 @@
+# keycloak stand-in on the random provider; real provider when credentials land
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-keycloak
+program:
+  configuration:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    topGroup:
+      type: random:RandomPet
+      properties:
+        separator: '-'
+    consoleGroup:
+      type: random:RandomPet
+      properties:
+        separator: '-'
+    roleGroups:
+      type: random:RandomString
+      properties:
+        length: 24
+        special: false
+        upper: false
+  outputs:
+    groupPaths: '[/${projectSlug}, /${projectSlug}/console, ...roles]'

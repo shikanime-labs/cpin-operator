@@ -50,7 +50,7 @@ func waitReady(t *testing.T, resource, name, condExpr string, timeout time.Durat
 func TestProjectChain(t *testing.T) {
 	overlay := os.Getenv("CPIN_OVERLAY")
 	if overlay == "" {
-		overlay = "nishir"
+		overlay = "default"
 	}
 
 	t.Run("apply", func(t *testing.T) {
