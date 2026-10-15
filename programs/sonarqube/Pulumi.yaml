@@ -1,0 +1,132 @@
+# SonarQube provisioning program for cpin-operator.
+#
+# Stand-in resources typed cpin:sonarqube:Artifact; a real SonarQube provider
+# replaces them later without changing the desired-state shape. Semantics come
+# from the console sonarqube audit (docs/audit/sonarqube.md):
+#
+# - Project: key = slug, name = project name, visibility private.
+# - Robot account: login = slug, local: true, email {slug}@cloud-pi-native.fr
+#   (fake per-project; legacy robots carrying the owner's real email are
+#   rewritten every reconcile — #2510 SSO collision), random 30-char password.
+# - Robot token: "Sonar Token for {slug}"; rotation = revoke (best-effort)
+#   + generate. Token feeds GitLab CI variables (cross-module side effect,
+#   not modeled here).
+# - Role groups /{slug}{suffix} per suffix (admin/devops/developer/readonly/
+#   security; comma-separated multi-path; admin > project precedence); groups
+#   carry no members — membership flows through OIDC sync.
+# - Permission sets: admin -> [admin, scan, user, codeviewer, issueadmin,
+#   securityhotspotadmin]; devops/developer/security -> [scan, user,
+#   codeviewer]; readonly -> [user, codeviewer]. Grants idempotent (re-grant
+#   no-op); 409 / message-matched races treated as conflict signal.
+# - Platform groups: security + readonly groups granted security/readonly
+#   sets on EVERY project — modelled as a granted permission, not a resource.
+name: cpin-program-sonarqube
+description: SonarQube project provisioning from the console sonarqube audit
+runtime: yaml
+
+config:
+  projectName:
+    type: String
+  projectSlug:
+    type: String
+  projectOwner:
+    type: String
+
+resources:
+  # Project — key = slug, private visibility.
+  project:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: project
+      key: "${projectSlug}"
+      name: "${projectName}"
+      options:
+        visibility: private
+
+  # Robot account — login = slug, local user, fake per-project email. Legacy
+  # robots with the owner's real email are rewritten every reconcile (#2510).
+  robotAccount:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: robot-account
+      login: "${projectSlug}"
+      options:
+        local: true
+        email: "${projectSlug}@cloud-pi-native.fr"
+        password: random-30-chars
+        note: email rewritten every reconcile; SSO collision guard #2510
+
+  # Robot token — "Sonar Token for {slug}"; rotation = revoke best-effort +
+  # generate. Value only exported for CI variable wiring.
+  robotToken:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: token
+      name: "Sonar Token for ${projectSlug}"
+      login: "${robotAccount.login}"
+      options:
+        rotation: revoke-best-effort-then-generate
+
+  # /{slug}{suffix} role groups — no members; membership flows through OIDC
+  # sync. Comma-separated multi-path grant; admin > project precedence.
+  adminRoleGroups:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: role-groups
+      rolePaths: "/${projectSlug}admin"
+      options:
+        permissions: [admin, scan, user, codeviewer, issueadmin, securityhotspotadmin]
+        precedence: project
+
+  devopsRoleGroups:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: role-groups
+      rolePaths: "/${projectSlug}devops"
+      options:
+        permissions: [scan, user, codeviewer]
+
+  developerRoleGroups:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: role-groups
+      rolePaths: "/${projectSlug}developer"
+      options:
+        permissions: [scan, user, codeviewer]
+
+  readonlyRoleGroups:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: role-groups
+      rolePaths: "/${projectSlug}readonly"
+      options:
+        permissions: [user, codeviewer]
+        platformGrant: security-readonly-sets-on-every-project
+
+  securityRoleGroups:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: role-groups
+      rolePaths: "/${projectSlug}security"
+      options:
+        permissions: [scan, user, codeviewer]
+        platformGrant: security-readonly-sets-on-every-project
+
+  # Scanner properties — sonar.projectKey={key}, qualitygate wait.
+  scannerProperties:
+    type: cpin:sonarqube:Artifact
+    properties:
+      kind: scanner-properties
+      projectKey: "${project.key}"
+      options:
+        qualityGateWait: true
+
+outputs:
+  projectKey: "${project.key}"
+  robotLogin: "${robotAccount.login}"
+  rolePaths:
+    - "${adminRoleGroups.rolePaths}"
+    - "${devopsRoleGroups.rolePaths}"
+    - "${developerRoleGroups.rolePaths}"
+    - "${readonlyRoleGroups.rolePaths}"
+    - "${securityRoleGroups.rolePaths}"
