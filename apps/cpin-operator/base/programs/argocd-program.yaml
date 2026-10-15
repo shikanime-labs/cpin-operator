@@ -1,0 +1,37 @@
+#Generated from programs/argocd/Pulumi.yaml — edit there, regenerate here
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-argocd
+program:
+  name: cpin-argocd
+  description: "ArgoCD provisioning from console audit \u2014 environment values rendered\
+    \ into the infra Git repo"
+  runtime: yaml
+  config:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    environmentValues:
+      type: cpin:argocd:EnvironmentValues
+      properties:
+        repoPath: ${projectSlug}/clusters
+        groupKeys:
+          roGroupPrefix: /${projectSlug}/console
+          platformAdminGroup: /console/admin
+    appProject:
+      type: cpin:argocd:AppProject
+      properties:
+        namePrefix: ${projectSlug}
+        hmacKey: ''
+    vaultAppRole:
+      type: cpin:argocd:VaultAppRole
+      properties:
+        projectName: ${projectName}
+  outputs:
+    valuesPath: ${environmentValues.repoPath}
+    appProjectPrefix: ${appProject.namePrefix}

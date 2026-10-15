@@ -1,0 +1,114 @@
+#Generated from programs/sonarqube/Pulumi.yaml — edit there, regenerate here
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-sonarqube
+program:
+  name: cpin-program-sonarqube
+  description: SonarQube project provisioning from the console sonarqube audit
+  runtime: yaml
+  config:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    project:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: project
+        key: ${projectSlug}
+        name: ${projectName}
+        options:
+          visibility: private
+    robotAccount:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: robot-account
+        login: ${projectSlug}
+        options:
+          local: true
+          email: ${projectSlug}@cloud-pi-native.fr
+          password: random-30-chars
+          note: email rewritten every reconcile; SSO collision guard
+    robotToken:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: token
+        name: Sonar Token for ${projectSlug}
+        login: ${robotAccount.login}
+        options:
+          rotation: revoke-best-effort-then-generate
+    adminRoleGroups:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: role-groups
+        rolePaths: /${projectSlug}admin
+        options:
+          permissions:
+          - admin
+          - scan
+          - user
+          - codeviewer
+          - issueadmin
+          - securityhotspotadmin
+          precedence: project
+    devopsRoleGroups:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: role-groups
+        rolePaths: /${projectSlug}devops
+        options:
+          permissions:
+          - scan
+          - user
+          - codeviewer
+    developerRoleGroups:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: role-groups
+        rolePaths: /${projectSlug}developer
+        options:
+          permissions:
+          - scan
+          - user
+          - codeviewer
+    readonlyRoleGroups:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: role-groups
+        rolePaths: /${projectSlug}readonly
+        options:
+          permissions:
+          - user
+          - codeviewer
+          platformGrant: security-readonly-sets-on-every-project
+    securityRoleGroups:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: role-groups
+        rolePaths: /${projectSlug}security
+        options:
+          permissions:
+          - scan
+          - user
+          - codeviewer
+          platformGrant: security-readonly-sets-on-every-project
+    scannerProperties:
+      type: cpin:sonarqube:Artifact
+      properties:
+        kind: scanner-properties
+        projectKey: ${project.key}
+        options:
+          qualityGateWait: true
+  outputs:
+    projectKey: ${project.key}
+    robotLogin: ${robotAccount.login}
+    rolePaths:
+    - ${adminRoleGroups.rolePaths}
+    - ${devopsRoleGroups.rolePaths}
+    - ${developerRoleGroups.rolePaths}
+    - ${readonlyRoleGroups.rolePaths}
+    - ${securityRoleGroups.rolePaths}

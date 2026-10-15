@@ -1,0 +1,104 @@
+#Generated from programs/keycloak/Pulumi.yaml — edit there, regenerate here
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-keycloak
+program:
+  name: cpin-program-keycloak
+  description: Keycloak group tree provisioning from the console keycloak audit
+  runtime: yaml
+  config:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    topGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: group
+        path: /${projectSlug}
+        members:
+        - ${projectOwner}
+        options:
+          note: connectivity anchor; membership inherited downward, grants nothing
+            by itself
+    consoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: group
+        path: /${projectSlug}/console
+        parent: ${topGroup.path}
+        options:
+          note: fixed name; ownership marker for orphan purge
+    adminRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: role-group
+        path: ${consoleGroup.path}/admin
+        parent: ${consoleGroup.path}
+        members:
+        - ${projectOwner}
+        options:
+          roleType: managed
+          note: owner seeded as admin
+    devopsRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: role-group
+        path: ${consoleGroup.path}/devops
+        parent: ${consoleGroup.path}
+        members: []
+        options:
+          roleType: managed
+    developerRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: role-group
+        path: ${consoleGroup.path}/developer
+        parent: ${consoleGroup.path}
+        members: []
+        options:
+          roleType: managed
+    readonlyRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: role-group
+        path: ${consoleGroup.path}/readonly
+        parent: ${consoleGroup.path}
+        members: []
+        options:
+          roleType: managed
+    adminAdminRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: admin-role-group
+        path: /admin
+        members: []
+        options:
+          roleType: managed
+          note: desired set from UserWithAdminRoles; purge managed members absent
+            from desired
+    consoleReaderAdminRoleGroup:
+      type: cpin:keycloak:Artifact
+      properties:
+        kind: admin-role-group
+        path: /console/reader
+        members: []
+        options:
+          roleType: managed
+          note: desired set from UserWithAdminRoles; purge managed members absent
+            from desired
+  outputs:
+    topGroupPath: ${topGroup.path}
+    consoleGroupPath: ${consoleGroup.path}
+    roleGroupPaths:
+    - ${adminRoleGroup.path}
+    - ${devopsRoleGroup.path}
+    - ${developerRoleGroup.path}
+    - ${readonlyRoleGroup.path}
+    adminRoleGroupPaths:
+    - ${adminAdminRoleGroup.path}
+    - ${consoleReaderAdminRoleGroup.path}
