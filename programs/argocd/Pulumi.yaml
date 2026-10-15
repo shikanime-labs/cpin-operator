@@ -1,0 +1,43 @@
+name: cpin-argocd
+description: ArgoCD provisioning from console audit — environment values rendered into the infra Git repo
+# ponytail: stand-in types cpin:argocd:*. Console renders values files into the
+# infra Git repo (GitOps sync, no ArgoCD HTTP API). Real implementation: a Git
+# client resource committing the rendered tree; ArgoCD converges it.
+runtime: yaml
+
+config:
+  projectName: { type: String }
+  projectSlug: { type: String }
+  projectOwner: { type: String }
+
+resources:
+  # one values file per {cluster}/{stage}/{env}; commit batching + no-op skip
+  # is the Git client's job (compare-then-commit), not a resource property.
+  environmentValues:
+    type: cpin:argocd:EnvironmentValues
+    properties:
+      repoPath: ${projectSlug}/clusters
+      # nine group keys rendered into values (audit table):
+      #   roGroup/rwGroup: /{slug}/console/{env}/{RO,RW}
+      #   consoleAdminGroup, platformAdminGroup (/console/admin),
+      #   platformReadonlyGroup, platformSecurityGroup,
+      #   projectAdminGroup, projectDevopsGroup, projectDevelopperGroup,
+      #   projectSecurityGroup
+      groupKeys:
+        roGroupPrefix: /${projectSlug}/console
+        platformAdminGroup: /console/admin
+  # AppProject name {slug}-{env}-{hmac4}, hmac4 = HMAC-SHA256(key:'', msg:env).slice(0,4)
+  appProject:
+    type: cpin:argocd:AppProject
+    properties:
+      namePrefix: ${projectSlug}
+      hmacKey: ""
+  # Vault AppRole handoff: ArgoCD pulls secret-id via the vault module's approle
+  vaultAppRole:
+    type: cpin:argocd:VaultAppRole
+    properties:
+      projectName: ${projectName}
+
+outputs:
+  valuesPath: ${environmentValues.repoPath}
+  appProjectPrefix: ${appProject.namePrefix}
