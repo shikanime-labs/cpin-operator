@@ -1,0 +1,44 @@
+# KRO ResourceGraphDefinition: console Project -> Pulumi Stack
+# ponytail: random-provider program stands in for keycloak/gitlab/harbor provisioning;
+# swap the Program's resources for real providers when wiring the console.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-project
+spec:
+  schema:
+    group: cpin.shikanime.studio
+    apiVersion: v1alpha1
+    kind: Project
+    scope: Namespaced
+    spec:
+      name: string
+      slug: string
+      owner: string
+    status:
+      services: ${stack.status.outputs.services}
+      stackState: ${stack.status.conditions.filter(c, c.type == 'Ready')[0].status}
+  resources:
+    - id: stack
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: ${schema.metadata.name}-pulumi
+        spec:
+          backend: file:///share
+          stack: ${schema.metadata.name}
+          programRef:
+            name: cpin-project-program
+          config:
+            projectName: ${schema.spec.name}
+            projectSlug: ${schema.spec.slug}
+            projectOwner: ${schema.spec.owner}
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
