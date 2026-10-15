@@ -1,8 +1,9 @@
-# RGD v2: one Pulumi Stack PER SERVICE (SRP: independent state, blast radius,
-# upgrade lifecycle per service). forEach over spec.services.
-# ponytail: KRO forEach + pulumi.com/v1 Stack; Program manifests live in
-# programs/<svc>/Pulumi.yaml per service branch (flattened to a Program CR per
-# service in manifests/programs/ when the branches land).
+# Project RGD: project-level identity — services fan out to one Pulumi Stack
+# per service (independent state and lifecycle). Roles/members/environments
+# live in their own CRDs; Program config receives their JSON aggregate.
+# ponytail: SimpleSchema (kro v0.9) accepts flat scalar fields only and chokes
+# on quoted-JSON defaults — aggregates are plain strings, forEach unrolls
+# services via CEL split(). Revisit when kro gains list-typed fields.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -17,15 +18,17 @@ spec:
       name: string
       slug: string
       owner: string
-      services: |-
-        [string]
-        +k8s-validation: {rule: "self.all(s, s in ['keycloak','gitlab','harbor','sonarqube','nexus','vault','argocd'])"}
+      description: string
+      services: string
+      roles: string
+      members: string
+      environments: string
     status:
-      serviceStates: ${stacks.status.conditions}
+      services: ${schema.spec.services}
   resources:
     - id: stacks
       forEach:
-        - service: ${schema.spec.services}
+        - service: ${schema.spec.services.split(",")}
       template:
         apiVersion: pulumi.com/v1
         kind: Stack
@@ -40,6 +43,9 @@ spec:
             projectName: ${schema.spec.name}
             projectSlug: ${schema.spec.slug}
             projectOwner: ${schema.spec.owner}
+            roles: ${schema.spec.roles}
+            members: ${schema.spec.members}
+            environments: ${schema.spec.environments}
           envRefs:
             PULUMI_CONFIG_PASSPHRASE:
               type: Secret

@@ -9,37 +9,111 @@ Project CR ──► KRO (RGD) ──► pulumi.com/v1 Stack ×N ──► PKO w
      └──────────── status ◄── CEL ◄── Stack.status.outputs ◄────────┘
 ```
 
+## Installation
+
+Dependencies, in order. Versions below are the proven-on cluster pair; newer
+may work.
+
+1. **kro** (ResourceGraphDefinition controller):
+
+   ```sh
+   kubectl apply -f https://github.com/kubernetes-sigs/kro/releases/latest/download/kro-with-crds.yaml
+   kubectl -n kro-system wait deploy/kro --for=condition=Available --timeout=300s
+   ```
+
+2. **pulumi-kubernetes-operator** (PKO v2, `Stack` + `Program` + `Workspace`):
+
+   ```sh
+   kubectl apply -f https://github.com/pulumi/pulumi-kubernetes-operator/releases/latest/download/pulumi-kubernetes-operator-crds.yaml
+   helm repo add pulumi https://pulumi.github.io/pulumi-kubernetes-operator
+   helm install -n pulumi-operator-system --create-namespace pko pulumi/pulumi-kubernetes-operator
+   ```
+
+3. **Pulumi state backend + passphrase** (dev: file backend on a PVC or
+   hostPath; prod: point each Stack's `backend` at a real service):
+
+   ```sh
+   kubectl create secret generic pulumi-passphrase --from-literal=PULUMI_CONFIG_PASSPHRASE=replace-me
+   ```
+
+4. **RBAC for the chain** (kro creates/owns Stacks; PKO workspaces need
+   TokenReview): included in `manifests/base/backend-rbac.yaml`.
+
+5. **This repo**:
+
+   ```sh
+   kubectl apply -k manifests/overlays/default
+   kubectl wait --for=condition=Established crd/projects.cpin.shikanime.studio
+   ```
+
+Verify: `kubectl get rgd` — all nine `cpin-*` Active; then `kubectl apply -f
+e2e/project.yaml && watch kubectl get stacks`.
+
 ## Layout
 
 ```
-manifests/base/                 Project/Zone/Cluster/Stage RGDs + RBAC
-manifests/components/programs/  pulumi.com/v1 Program CRs, one per service
-manifests/overlays/<cluster>/   cluster entrypoint (base + selected service
+manifests/base/                     Project/Zone/Cluster/Stage RGDs, project-scoped
+                                    RGDs (Role/Member/Service/Secret/Environment),
+                                    fine-grained RBAC, backend secret
+manifests/components/<svc>/           pulumi.com/v1 Program CRs, one kustomize
+                                    Component per service (<svc>/program.yaml);
+                                    overlays compose them per cluster
+manifests/overlays/<cluster>/       cluster entrypoint (base + selected service
                                     components); default overlay: default/
+e2e/                                Go e2e suite mirroring console
+                                    apps/server-nestjs/test coverage
 ```
 
 Deploy path: Flux `clusters/<c>/components/cpin/ks.yaml` in
-shikanime-labs/manifests points at `./manifests/overlays/<c>`, with kro and
-pulumi-kubernetes-operator installed under `infrastructure/`.
+shikanime-labs/manifests points at `./manifests/overlays/<c>`.
 
 ## CRD model (console entities → KRO)
 
 | Console entity | CRD | Scope | Provisions via |
 | --- | --- | --- | --- |
 | Project | `Project` | Namespaced | one Stack per `spec.services` (forEach) |
-| Zone | `Zone` | Cluster | vault Stack (zone mount + AppRole) |
+| ProjectRole | `ProjectRole` | Namespaced | aggregate in Project Stack config |
+| ProjectMember | `ProjectMember` | Namespaced | aggregate in Project Stack config |
+| ProjectService | `ProjectService` | Namespaced | aggregate in Project Stack config |
+| ProjectSecret | `ProjectSecret` | Namespaced | aggregate in Project Stack config |
+| Environment | `Environment` | Namespaced | aggregate in Project Stack config |
+| Zone | `Zone` | Cluster | declarative topology (vault mount via socle) |
 | Cluster | `Cluster` | Cluster | kubeconfig secret ref |
 | Stage | `Stage` | Cluster | name-only dimension |
 
-Environment, roles, members are Project sub-fields fanned into every Stack
-config. Permissions stay integer bitmasks (decode at API layer). Owner is
-exclusive of members — admission CEL rejects violations.
+Project sub-fields (services, roles, members, environments) stay on the
+Project CR as comma/JSON strings for the Stack fan-out; the project-scoped
+CRDs are the fine-grained write surface for RBAC — each maps to a console
+module and a dedicated ClusterRole (`cpin:project-roles-admin`,
+`cpin:project-members-admin`, `cpin:project-services-admin`,
+`cpin:project-secrets-admin`, `cpin:environment-admin`). Permissions stay
+integer bitmasks (decode at API layer).
+
+## RBAC
+
+Fine-grained roles in `manifests/base/project-scoped-rbac.yaml` mirror the
+console module split, so a platform team can own member management without
+project mutation rights:
+
+```sh
+kubectl auth reconcile -f manifests/base/project-scoped-rbac.yaml
+```
+
+## E2E
+
+```sh
+go test -tags e2e -v -timeout 30m        # against the current kubectl context
+CPIN_OVERLAY=<cluster> go test ...       # non-default overlay
+```
+
+Coverage mirrors console `apps/server-nestjs/test`: project lifecycle +
+KRO→PKO chain, roles, members, services, secrets, environments, RBAC roles.
 
 ## Conventions
 
 - One Kubernetes kind per file, `<short-name>.yaml`, sorted `resources:` lists
 - Programs are CRDs, not generated artifacts — edit
-  `manifests/components/programs/<svc>-program.yaml` directly
+  `manifests/components/<svc>/program.yaml` directly
 - Render gate: `kubectl kustomize manifests/overlays/<cluster>`
 - Beyond POC: replace `backend: file:///share` per Stack with a real backend
 

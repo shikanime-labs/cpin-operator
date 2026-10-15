@@ -3,4 +3,6 @@ kind: Kustomization
 resources:
   - backend-rbac.yaml
   - project-rgd.yaml
+  - project-scoped-rgds.yaml
+  - project-scoped-rbac.yaml
   - topology.yaml

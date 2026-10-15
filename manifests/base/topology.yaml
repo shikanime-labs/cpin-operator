@@ -17,29 +17,24 @@ spec:
       label: string
       description: string | default=""
       argocdUrl: string
-    status:
-      mountReady: ${zoneStack.status.conditions.filter(c, c.type == 'Ready')[0].status}
-  resources:
-    - id: zoneStack
-      template:
-        apiVersion: pulumi.com/v1
-        kind: Stack
-        metadata:
-          name: zone-${schema.spec.slug}
-        spec:
-          backend: file:///share
-          stack: zone-${schema.spec.slug}
-          programRef:
-            name: cpin-program-vault
-          config:
-            mode: zone
-            zoneSlug: ${schema.spec.slug}
-          envRefs:
-            PULUMI_CONFIG_PASSPHRASE:
-              type: Secret
-              secret: { name: pulumi-passphrase, key: PULUMI_CONFIG_PASSPHRASE }
-          destroyOnFinalize: true
-          resyncFrequencySeconds: 300
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-stage
+spec:
+  schema:
+    group: cpin.shikanime.studio
+    apiVersion: v1alpha1
+    kind: Stage
+    scope: Cluster
+    spec:
+      name: string
+      clusters: string
+    status: {}
+  resources: []
 ---
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
@@ -57,25 +52,7 @@ spec:
       secretName: string
       zone: string
       memory: integer | default=0
-      cpu: number | default=0
+      cpu: integer | default=0
       gpu: integer | default=0
-    status: {}
-  resources: []
----
-apiVersion: kro.run/v1alpha1
-kind: ResourceGraphDefinition
-metadata:
-  name: cpin-stage
-spec:
-  schema:
-    group: cpin.shikanime.studio
-    apiVersion: v1alpha1
-    kind: Stage
-    scope: Cluster
-    spec:
-      name: string
-      clusters: |-
-        [string]
-        +k8s-validation: {}
     status: {}
   resources: []
