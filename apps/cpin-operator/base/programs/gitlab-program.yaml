@@ -1,0 +1,86 @@
+#Generated from programs/gitlab/Pulumi.yaml — edit there, regenerate here
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-gitlab
+program:
+  name: cpin-program-gitlab
+  description: GitLab group provisioning from the console gitlab audit
+  runtime: yaml
+  config:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    projectGroup:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: group
+        path: /${projectSlug}
+        options:
+          note: get-or-create with collision reload; custom attribute cpn_project_slug;
+            no per-role subgroups
+    mirrorRobot:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: mirror-robot
+        group: ${projectGroup.path}
+        options:
+          tokenRotation:
+            strategy: age-based
+            rotateWhen: token age crosses threshold
+            note: threshold config-enforced, always below token expiry
+    adminShare:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: group-share
+        group: ${projectGroup.path}
+        sharedWithGroupPath: /${projectSlug}/console/admin
+        groupAccessLevel: 50
+    devopsShare:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: group-share
+        group: ${projectGroup.path}
+        sharedWithGroupPath: /${projectSlug}/console/devops
+        groupAccessLevel: 40
+    developerShare:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: group-share
+        group: ${projectGroup.path}
+        sharedWithGroupPath: /${projectSlug}/console/developer
+        groupAccessLevel: 30
+    readonlyShare:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: group-share
+        group: ${projectGroup.path}
+        sharedWithGroupPath: /${projectSlug}/console/readonly
+        groupAccessLevel: 10
+    instanceFlags:
+      type: cpin:gitlab:Artifact
+      properties:
+        kind: instance-flags
+        users:
+        - ${projectOwner}
+        admin:
+          groupPaths:
+          - /admin
+        auditor:
+          groupPaths:
+          - /console/readonly
+          - /console/security
+        options:
+          note: member->true, non-member->false, empty mapping->undefined no-op
+  outputs:
+    projectGroupPath: ${projectGroup.path}
+    mirrorRobotId: ${mirrorRobot.id}
+    roleGroupAccessLevels:
+      admin: ${adminShare.groupAccessLevel}
+      devops: ${devopsShare.groupAccessLevel}
+      developer: ${developerShare.groupAccessLevel}
+      readonly: ${readonlyShare.groupAccessLevel}

@@ -1,0 +1,95 @@
+#Generated from programs/nexus/Pulumi.yaml — edit there, regenerate here
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-nexus
+program:
+  name: cpin-program-nexus
+  description: Nexus repository and role provisioning from the console nexus audit
+  runtime: yaml
+  config:
+    projectName:
+      type: String
+    projectSlug:
+      type: String
+    projectOwner:
+      type: String
+  resources:
+    mavenReleaseRepo:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: maven-hosted-repo
+        name: ${projectSlug}-maven-release
+        options:
+          writePolicy: allow_once
+          versionPolicy: MIXED
+    mavenSnapshotRepo:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: maven-hosted-repo
+        name: ${projectSlug}-maven-snapshot
+        options:
+          writePolicy: allow
+          versionPolicy: MIXED
+    repositoryGroup:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: group-repo
+        name: ${projectSlug}-repository-group
+        members:
+        - ${mavenReleaseRepo.name}
+        - ${mavenSnapshotRepo.name}
+        options:
+          writePolicy: allow_once
+          contentValidation: strict
+          blobStore: default
+          disposition: attachment
+          note: cleanup deletes this group before the hosted repos
+    projectWriteRole:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: project-role
+        name: ${projectSlug}-write
+        groupPaths:
+        - /${projectSlug}/console/admin
+        - /${projectSlug}/console/devops
+        privileges:
+        - ${mavenReleaseRepo.name}
+        - ${mavenSnapshotRepo.name}
+        - ${repositoryGroup.name}
+        options:
+          actions:
+          - all
+    projectReadRole:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: project-role
+        name: ${projectSlug}-read
+        groupPaths:
+        - /${projectSlug}/console/developer
+        - /${projectSlug}/console/readonly
+        privileges:
+        - ${mavenReleaseRepo.name}
+        - ${mavenSnapshotRepo.name}
+        - ${repositoryGroup.name}
+        options:
+          actions:
+          - read
+          - browse
+    robotAccount:
+      type: cpin:nexus:Artifact
+      properties:
+        kind: robot-account
+        name: ${projectSlug}-robot
+        repositories:
+        - ${repositoryGroup.name}
+        options:
+          access: write
+          note: 'project: ${projectName}, contact: ${projectOwner}'
+  outputs:
+    mavenReleaseRepo: ${mavenReleaseRepo.name}
+    mavenSnapshotRepo: ${mavenSnapshotRepo.name}
+    repositoryGroup: ${repositoryGroup.name}
+    writeRoleGroupPaths: ${projectWriteRole.groupPaths}
+    readRoleGroupPaths: ${projectReadRole.groupPaths}
+    robotAccount: ${robotAccount.name}
