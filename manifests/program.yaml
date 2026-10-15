@@ -1,0 +1,21 @@
+# Inline Pulumi YAML program: stand-in resources for the services the console
+# would provision. Outputs flow back: Stack.status.outputs -> KRO CEL -> Project.status
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-project-program
+program:
+  configuration:
+    projectName: { type: String }
+    projectSlug: { type: String }
+    projectOwner: { type: String }
+  resources:
+    ciToken:
+      type: random:RandomPassword
+      properties:
+        length: 24
+        special: false
+        upper: false
+  outputs:
+    services: ["keycloak", "gitlab", "harbor"]
+    namespace: ${projectSlug}-ns

@@ -1,0 +1,8 @@
+apiVersion: cpin.shikanime.studio/v1alpha1
+kind: Project
+metadata:
+  name: detonation
+spec:
+  name: Detonation Project
+  slug: detonation
+  owner: william@shikanime.studio
