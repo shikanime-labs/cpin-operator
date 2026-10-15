@@ -1,0 +1,119 @@
+# Nexus provisioning program for cpin-operator.
+#
+# Stand-in resources typed cpin:nexus:Artifact; a real Nexus provider replaces
+# them later without changing the desired-state shape. Semantics come from the
+# console nexus audit (docs/audit/nexus.md):
+#
+# - Hosted repos {slug}-maven-release (writePolicy allow_once) and
+#   {slug}-maven-snapshot (writePolicy allow), versionPolicy MIXED.
+# - Group repo {slug}-repository-group aggregating the hosted repos:
+#   writePolicy allow_once, strict content-type validation, default blob
+#   store, ATTACHMENT disposition. Cleanup order: group first (Nexus 500s
+#   deleting a hosted repo still referenced by a group).
+# - Project security roles from OIDC group-path suffixes: write defaults
+#   /console/admin,/console/devops (full privileges), read defaults
+#   /console/developer,/console/readonly; paths are /{slug}{suffix}.
+# - Robot account {slug}-robot with write access to the group repo.
+# - Platform roles (console-admin/-readonly/-security) re-aggregate across
+#   ALL projects: stack-level concern, not modeled per-project here.
+name: cpin-program-nexus
+description: Nexus repository and role provisioning from the console nexus audit
+runtime: yaml
+
+config:
+  projectName:
+    type: String
+  projectSlug:
+    type: String
+  projectOwner:
+    type: String
+
+resources:
+  # {slug}-maven-release — hosted, releases only (writePolicy allow_once).
+  mavenReleaseRepo:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: maven-hosted-repo
+      name: "${projectSlug}-maven-release"
+      options:
+        writePolicy: allow_once
+        versionPolicy: MIXED
+
+  # {slug}-maven-snapshot — hosted, snapshots (writePolicy allow).
+  mavenSnapshotRepo:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: maven-hosted-repo
+      name: "${projectSlug}-maven-snapshot"
+      options:
+        writePolicy: allow
+        versionPolicy: MIXED
+
+  # {slug}-repository-group — aggregates the hosted repos; delete before them.
+  repositoryGroup:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: group-repo
+      name: "${projectSlug}-repository-group"
+      members:
+        - "${mavenReleaseRepo.name}"
+        - "${mavenSnapshotRepo.name}"
+      options:
+        writePolicy: allow_once
+        contentValidation: strict
+        blobStore: default
+        disposition: attachment
+        note: cleanup deletes this group before the hosted repos
+
+  # Write role — OIDC group-path suffixes /console/admin,/console/devops,
+  # full privileges over the project repos.
+  projectWriteRole:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: project-role
+      name: "${projectSlug}-write"
+      groupPaths:
+        - "/${projectSlug}/console/admin"
+        - "/${projectSlug}/console/devops"
+      privileges:
+        - "${mavenReleaseRepo.name}"
+        - "${mavenSnapshotRepo.name}"
+        - "${repositoryGroup.name}"
+      options:
+        actions: [all]
+
+  # Read role — suffixes /console/developer,/console/readonly, read+browse.
+  projectReadRole:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: project-role
+      name: "${projectSlug}-read"
+      groupPaths:
+        - "/${projectSlug}/console/developer"
+        - "/${projectSlug}/console/readonly"
+      privileges:
+        - "${mavenReleaseRepo.name}"
+        - "${mavenSnapshotRepo.name}"
+        - "${repositoryGroup.name}"
+      options:
+        actions: [read, browse]
+
+  # {slug}-robot — CI robot account, write access to the group repo.
+  robotAccount:
+    type: cpin:nexus:Artifact
+    properties:
+      kind: robot-account
+      name: "${projectSlug}-robot"
+      repositories:
+        - "${repositoryGroup.name}"
+      options:
+        access: write
+        note: "project: ${projectName}, contact: ${projectOwner}"
+
+outputs:
+  mavenReleaseRepo: "${mavenReleaseRepo.name}"
+  mavenSnapshotRepo: "${mavenSnapshotRepo.name}"
+  repositoryGroup: "${repositoryGroup.name}"
+  writeRoleGroupPaths: "${projectWriteRole.groupPaths}"
+  readRoleGroupPaths: "${projectReadRole.groupPaths}"
+  robotAccount: "${robotAccount.name}"
