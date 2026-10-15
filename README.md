@@ -3,40 +3,43 @@
 cloud-pi-native console and socle, reimplemented as KRO ResourceGraphDefinitions
 backed by Pulumi programs — no controllers, no database.
 
-**Deploy path:** `apps/cpin-operator/overlays/<cluster>` — rendered by Flux
-(`clusters/<c>/components/cpin/ks.yaml` in shikanime-labs/manifests) with kro +
-pulumi-kubernetes-operator installed under `infrastructure/`.
+```
+Project CR ──► KRO (RGD) ──► pulumi.com/v1 Stack ×N ──► PKO workspace pods ──► pulumi up
+     ▲                                                              │
+     └──────────── status ◄── CEL ◄── Stack.status.outputs ◄────────┘
+```
 
 ## Layout
 
-- `apps/cpin-operator/base/` — the deployable unit: Project + topology RGDs
-  (`project-rgd.yaml`, `topology.yaml`), operator RBAC (`backend-rbac.yaml`),
-  and one `pulumi.com/v1 Program` per service under `programs/` (generated
-  from `programs/<svc>/Pulumi.yaml` — edit the source, regenerate the CR)
-- `apps/cpin-operator/overlays/<cluster>/` — per-cluster composition entrypoint
-- `programs/<svc>/Pulumi.yaml` — source of truth per Program CR (keycloak,
-  gitlab, harbor, sonarqube, nexus, vault, argocd = console sync plane;
-  socle = service-install plane, helm Releases pinned to socle versions.md)
-- `manifests/` — POC-era files (superseded by `apps/`; deletion pending)
+```
+manifests/base/                 Project/Zone/Cluster/Stage RGDs + RBAC
+manifests/components/programs/  pulumi.com/v1 Program CRs, one per service
+manifests/overlays/<cluster>/   cluster entrypoint (base + programs component)
+```
 
-## CRD model (console data structures as KRO CRDs)
+Deploy path: Flux `clusters/<c>/components/cpin/ks.yaml` in
+shikanime-labs/manifests points at `./manifests/overlays/<c>`, with kro and
+pulumi-kubernetes-operator installed under `infrastructure/`.
+
+## CRD model (console entities → KRO)
 
 | Console entity | CRD | Scope | Provisions via |
 | --- | --- | --- | --- |
-| Project | `Project` | Namespaced | one Stack per `spec.services` (KRO forEach) |
+| Project | `Project` | Namespaced | one Stack per `spec.services` (forEach) |
 | Zone | `Zone` | Cluster | vault Stack (zone mount + AppRole) |
-| Cluster | `Cluster` | Cluster | kubeconfig secret ref (metadata) |
-| Stage | `Stage` | Cluster | none — name-only dimension |
-| Environment / roles / members | Project sub-fields | — | fan into every service Stack config |
+| Cluster | `Cluster` | Cluster | kubeconfig secret ref |
+| Stage | `Stage` | Cluster | name-only dimension |
 
-Owner exclusive of members (admission CEL). Permissions stay integer bitmasks.
+Environment, roles, members are Project sub-fields fanned into every Stack
+config. Permissions stay integer bitmasks (decode at API layer). Owner is
+exclusive of members — admission CEL rejects violations.
 
 ## Conventions
 
-- One kind per file, `<short-name>.yaml`, sorted `resources:` lists
-- After editing `programs/<svc>/Pulumi.yaml`, regenerate
-  `apps/.../programs/<svc>-program.yaml` (python3 + yaml.safe_dump)
-- Render gate: `kubectl kustomize apps/cpin-operator/overlays/<cluster>`
+- One Kubernetes kind per file, `<short-name>.yaml`, sorted `resources:` lists
+- Programs are CRDs, not generated artifacts — edit
+  `manifests/components/programs/<svc>-program.yaml` directly
+- Render gate: `kubectl kustomize manifests/overlays/<cluster>`
 - Beyond POC: replace `backend: file:///share` per Stack with a real backend
 
 ## Commit Style
