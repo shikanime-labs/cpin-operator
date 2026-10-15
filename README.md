@@ -14,7 +14,8 @@ Project CR ──► KRO (RGD) ──► pulumi.com/v1 Stack ×N ──► PKO w
 ```
 manifests/base/                 Project/Zone/Cluster/Stage RGDs + RBAC
 manifests/components/programs/  pulumi.com/v1 Program CRs, one per service
-manifests/overlays/<cluster>/   cluster entrypoint (base + programs component)
+manifests/overlays/<cluster>/   cluster entrypoint (base + selected service
+                                    components); default overlay: default/
 ```
 
 Deploy path: Flux `clusters/<c>/components/cpin/ks.yaml` in
