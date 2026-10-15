@@ -1,0 +1,50 @@
+# RGD v2: one Pulumi Stack PER SERVICE (SRP: independent state, blast radius,
+# upgrade lifecycle per service). forEach over spec.services.
+# ponytail: KRO forEach + pulumi.com/v1 Stack; Program manifests live in
+# programs/<svc>/Pulumi.yaml per service branch (flattened to a Program CR per
+# service in manifests/programs/ when the branches land).
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-project
+spec:
+  schema:
+    group: cpin.shikanime.studio
+    apiVersion: v1alpha1
+    kind: Project
+    scope: Namespaced
+    spec:
+      name: string
+      slug: string
+      owner: string
+      services: |-
+        [string]
+        +k8s-validation: {rule: "self.all(s, s in ['keycloak','gitlab','harbor','sonarqube','nexus','vault','argocd'])"}
+    status:
+      serviceStates: ${stacks.status.conditions}
+  resources:
+    - id: stacks
+      forEach:
+        - service: ${schema.spec.services}
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: ${schema.metadata.name}-${service}
+        spec:
+          backend: file:///share
+          stack: ${schema.metadata.name}-${service}
+          programRef:
+            name: cpin-program-${service}
+          config:
+            projectName: ${schema.spec.name}
+            projectSlug: ${schema.spec.slug}
+            projectOwner: ${schema.spec.owner}
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
