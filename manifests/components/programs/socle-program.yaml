@@ -1,4 +1,3 @@
-# Generated from programs/socle/Pulumi.yaml — edit there, run scripts/gen-programs.py
 apiVersion: pulumi.com/v1
 kind: Program
 metadata:
