@@ -1,0 +1,269 @@
+# Project: the Gateway-API-style "hat" CRD. Users live in the IdP (Keycloak);
+# the K8s plane binds OIDC groups (kind: Group subjects) to native Roles per
+# standard role, services resolve groups at login from the rbac.<svc> contract
+# CRs — no ProjectMember mirror. Environments attach by label
+# (cloud-pi-native.fr/project); externalRef collections aggregate into Stack
+# config with reactive re-sync.
+
+# is proven on kro v0.9.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-project
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Project
+    scope: Namespaced
+    spec:
+      name: string
+      slug: string
+      owner: string
+      description: string
+      services: string
+    status:
+      services: ${schema.spec.services}
+      roles: ${roles.map(r, r.metadata.name).join(",")}
+      environments: ${environments.map(e, e.metadata.name).join(",")}
+  resources:
+    - id: roles
+      externalRef:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: Role
+        metadata:
+          selector:
+            matchExpressions:
+              - key: cloud-pi-native.fr/project
+                operator: In
+                values: ["${schema.metadata.name}"]
+    - id: environments
+      externalRef:
+        apiVersion: cloud-pi-native.fr/v1alpha1
+        kind: Environment
+        metadata:
+          selector:
+            matchExpressions:
+              - key: cloud-pi-native.fr/project
+                operator: In
+                values: ["${schema.metadata.name}"]
+    - id: gitlabRoles
+      externalRef:
+        apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
+        kind: Role
+        metadata:
+          selector:
+            matchLabels:
+              cloud-pi-native.fr/service-role: "true"
+    - id: stdRoles
+      forEach:
+        - std: ${[{"suffix":"admin","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"devops","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"developer","verbs":["get","list","watch"]},{"suffix":"readonly","verbs":["get","list","watch"]},{"suffix":"security","verbs":["get","list","watch"]}]}
+      template:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: Role
+        metadata:
+          name: ${schema.metadata.name}-${std.suffix}
+          labels:
+            cloud-pi-native.fr/project: ${schema.metadata.name}
+        rules:
+          - apiGroups: ["cloud-pi-native.fr"]
+            resources: ["projects", "environments", "projectmembers", "projectservices", "projectsecrets"]
+            verbs: ${std.verbs}
+    - id: groupBindings
+      forEach:
+        - std: ${[{"suffix":"admin"},{"suffix":"devops"},{"suffix":"developer"},{"suffix":"readonly"},{"suffix":"security"}]}
+      template:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: RoleBinding
+        metadata:
+          name: ${schema.metadata.name}-${std.suffix}
+          labels:
+            cloud-pi-native.fr/project: ${schema.metadata.name}
+        roleRef:
+          apiGroup: rbac.authorization.k8s.io
+          kind: Role
+          name: ${schema.metadata.name}-${std.suffix}
+        subjects:
+          - kind: Group
+            name: ${schema.spec.slug}/console/${std.suffix}
+            apiGroup: rbac.authorization.k8s.io
+    - id: stacks
+      forEach:
+        - service: ${schema.spec.services.split(",")}
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: ${schema.metadata.name}-${service}
+        spec:
+          backend: file:///share
+          stack: ${schema.metadata.name}-${service}
+          programRef:
+            name: cpin-program-${service}
+          config:
+            projectName: ${schema.spec.name}
+            projectSlug: ${schema.spec.slug}
+            projectOwner: ${schema.spec.owner}
+            roles: ${roles.map(r, r.metadata.name).join(",")}
+            gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.?role.orValue("?") + "=" + string(r.spec.?accessLevel.orValue(0))).join(",")}
+            gitlabRoles: ${gitlabRoles.map(r, r.spec.?role.orValue("?") + ":" + string(r.spec.?accessLevel.orValue(0))).join(",")}
+            environments: ${environments.map(e, e.spec.?name.orValue("env") + "@" + e.spec.?cluster.orValue("none")).join(",")}
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
+
+---
+
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-zone
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Zone
+    scope: Cluster
+    spec:
+      slug: string | maxLength=10
+      label: string
+      description: string | default=""
+      argocdUrl: string
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-stage
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Stage
+    scope: Cluster
+    spec:
+      name: string
+      clusters: string
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-cluster
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Cluster
+    scope: Cluster
+    spec:
+      label: string
+      privacy: string | default="public"
+      secretName: string
+      zone: string
+      memory: integer | default=0
+      cpu: integer | default=0
+      gpu: integer | default=0
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-project-service
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: ProjectService
+    scope: Namespaced
+    spec:
+      project: string
+      service: string
+      enabled: boolean
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-project-secret
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: ProjectSecret
+    scope: Namespaced
+    spec:
+      project: string
+      key: string
+      value: string
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-environment
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Environment
+    scope: Namespaced
+    spec:
+      project: string
+      name: string
+      cluster: string
+      stage: string
+      cpu: integer
+      memory: integer
+      gpu: integer
+    status: {}
+  resources: []
+---
+# Service roles: console built-in role <-> external service permission as
+# first-class CRDs in per-service API groups (rbac.<service>.cloud-pi-native.fr
+# fr, kind Role) — granular RBAC per group, no kind explosion in the
+# shared group. The console hardcodes these mappings per module (gitlab
+# AccessLevel, harbor role_id); service programs read them via Stack config.
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-gitlab-role
+spec:
+  schema:
+    group: rbac.gitlab.cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Role
+    scope: Cluster
+    spec:
+      role: string
+      accessLevel: integer
+      projectMemberGroup: string
+    status: {}
+  resources: []
+---
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-harbor-role
+spec:
+  schema:
+    group: rbac.harbor.cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Role
+    scope: Cluster
+    spec:
+      role: string
+      roleId: integer
+    status: {}
+  resources: []
