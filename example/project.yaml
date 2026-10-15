@@ -2,7 +2,18 @@ apiVersion: cpin.shikanime.studio/v1alpha1
 kind: Project
 metadata:
   name: detonation
+  namespace: cpin-system
 spec:
   name: Detonation Project
   slug: detonation
   owner: william@shikanime.studio
+  services: [keycloak, gitlab, harbor, sonarqube, nexus, vault, argocd]
+  roles:
+    - {name: Administrateur, oidcGroupSuffix: admin, permissions: 8191, position: 1}
+    - {name: DevOps, oidcGroupSuffix: devops, permissions: 4610, position: 2}
+    - {name: Developpeur, oidcGroupSuffix: developer, permissions: 1542, position: 3}
+    - {name: Lecteur, oidcGroupSuffix: readonly, permissions: 896, position: 4}
+  members:
+    - {email: dev@example.fr, roles: [Developpeur]}
+  environments:
+    - {name: dev, cluster: nishir, stage: dev, quota: {cpu: 2, memory: 4, gpu: 0}}
