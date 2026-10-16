@@ -39,12 +39,13 @@ var (
 )
 
 var (
-	projectGVK = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "Project"}
-	roleGVK    = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "ProjectRole"}
-	memberGVK  = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "ProjectMember"}
-	svcGVK     = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "ProjectService"}
-	secretGVK  = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "ProjectSecret"}
-	envGVK     = schema.GroupVersionKind{Group: "cpin.shikanime.studio", Version: "v1alpha1", Kind: "Environment"}
+	projectGVK = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Project"}
+	rbacRoleGVK    = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
+	rbacBindingGVK = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "RoleBinding"}
+	gitlabRoleGVK  = schema.GroupVersionKind{Group: "rbac.gitlab.cloud-pi-native.fr", Version: "v1alpha1", Kind: "Role"}
+	svcGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectService"}
+	secretGVK  = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectSecret"}
+	envGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Environment"}
 	stackGVK   = schema.GroupVersionKind{Group: "pulumi.com", Version: "v1", Kind: "Stack"}
 	rgdGVK     = schema.GroupVersionKind{Group: "kro.run", Version: "v1alpha1", Kind: "ResourceGraphDefinition"}
 	crdGVK     = schema.GroupVersionKind{Group: "apiextensions.k8s.io", Version: "v1", Kind: "CustomResourceDefinition"}
@@ -258,6 +259,23 @@ func TestProjectChain(t *testing.T) {
 	t.Run("project-ready", func(t *testing.T) {
 		waitTrue(t, projectGVK, name, "Ready", 10*time.Minute)
 	})
+	t.Run("group-bindings-seeded", func(t *testing.T) {
+		waitTrue(t, projectGVK, name, "Ready", 5*time.Minute)
+		for _, suffix := range []string{"admin", "devops", "developer", "readonly", "security"} {
+			b := get(t, rbacBindingGVK, name+"-"+suffix)
+			if out := field(t, b, "subjects", "0", "kind"); out != "Group" {
+				t.Fatalf("%s binding subject kind: %q", suffix, out)
+			}
+		}
+	})
+	t.Run("standard-roles-seeded", func(t *testing.T) {
+		for _, suffix := range []string{"admin", "devops", "developer", "readonly", "security"} {
+			r := get(t, rbacRoleGVK, name+"-"+suffix)
+			if out := field(t, r, "metadata", "labels", "cloud-pi-native.fr/project"); out != name {
+				t.Fatalf("%s attachment label: %q", suffix, out)
+			}
+		}
+	})
 	t.Run("stacks-ready", func(t *testing.T) {
 		for _, svc := range []string{"keycloak", "gitlab", "harbor"} {
 			waitTrue(t, stackGVK, name+"-"+svc, "Ready", 15*time.Minute)
@@ -284,58 +302,35 @@ func TestProjectChain(t *testing.T) {
 	})
 }
 
-// TestProjectRoles mirrors project-roles.e2e-spec.ts: create with bitmask,
-// patch position, delete.
-func TestProjectRoles(t *testing.T) {
-	t.Cleanup(func() { del(t, roleGVK, "detonation-admin") })
-	applyObject(t, fromYAML(t, `apiVersion: cpin.shikanime.studio/v1alpha1
-kind: ProjectRole
+// TestServiceRoles mirrors project-roles.e2e-spec.ts against the contract
+// group: service-role class CRUD (gitlab accessLevel mapping).
+func TestServiceRoles(t *testing.T) {
+	t.Cleanup(func() { del(t, gitlabRoleGVK, "gitlab-e2e-reporter") })
+	applyObject(t, fromYAML(t, `apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
+kind: Role
 metadata:
-  name: detonation-admin
+  name: gitlab-e2e-reporter
+  labels:
+    cloud-pi-native.fr/service-role: "true"
 spec:
-  project: detonation
-  name: Administrateur
-  oidcGroupSuffix: admin
-  permissions: 8191
-  position: 1
+  role: readonly
+  accessLevel: 20
+  projectMemberGroup: /console/readonly
 `))
-	if out := field(t, get(t, roleGVK, "detonation-admin"), "spec", "permissions"); out != "8191" {
-		t.Fatalf("permissions: %q", out)
+	if out := field(t, get(t, gitlabRoleGVK, "gitlab-e2e-reporter"), "spec", "accessLevel"); out != "20" {
+		t.Fatalf("accessLevel: %q", out)
 	}
-	patch(t, roleGVK, "detonation-admin", `{"spec":{"position":2}}`)
-	if out := field(t, get(t, roleGVK, "detonation-admin"), "spec", "position"); out != "2" {
-		t.Fatalf("position: %q", out)
+	patch(t, gitlabRoleGVK, "gitlab-e2e-reporter", `{"spec":{"accessLevel":30}}`)
+	if out := field(t, get(t, gitlabRoleGVK, "gitlab-e2e-reporter"), "spec", "accessLevel"); out != "30" {
+		t.Fatalf("accessLevel after patch: %q", out)
 	}
-	del(t, roleGVK, "detonation-admin")
-}
-
-// TestProjectMembers mirrors project-members.e2e-spec.ts: add, patch roles,
-// remove.
-func TestProjectMembers(t *testing.T) {
-	t.Cleanup(func() { del(t, memberGVK, "detonation-dev") })
-	applyObject(t, fromYAML(t, `apiVersion: cpin.shikanime.studio/v1alpha1
-kind: ProjectMember
-metadata:
-  name: detonation-dev
-spec:
-  project: detonation
-  email: dev@example.fr
-  roles: '["Developpeur"]'
-`))
-	if out := field(t, get(t, memberGVK, "detonation-dev"), "spec", "email"); out != "dev@example.fr" {
-		t.Fatalf("email: %q", out)
-	}
-	patch(t, memberGVK, "detonation-dev", `{"spec":{"roles":"[\"DevOps\"]"}}`)
-	if out := field(t, get(t, memberGVK, "detonation-dev"), "spec", "roles"); out != `["DevOps"]` {
-		t.Fatalf("roles: %q", out)
-	}
-	del(t, memberGVK, "detonation-dev")
+	del(t, gitlabRoleGVK, "gitlab-e2e-reporter")
 }
 
 // TestProjectServices mirrors project-services.e2e-spec.ts.
 func TestProjectServices(t *testing.T) {
 	t.Cleanup(func() { del(t, svcGVK, "detonation-keycloak") })
-	applyObject(t, fromYAML(t, `apiVersion: cpin.shikanime.studio/v1alpha1
+	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
 kind: ProjectService
 metadata:
   name: detonation-keycloak
@@ -353,7 +348,7 @@ spec:
 // TestProjectSecrets mirrors project-secrets.e2e-spec.ts.
 func TestProjectSecrets(t *testing.T) {
 	t.Cleanup(func() { del(t, secretGVK, "detonation-sonar-token") })
-	applyObject(t, fromYAML(t, `apiVersion: cpin.shikanime.studio/v1alpha1
+	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
 kind: ProjectSecret
 metadata:
   name: detonation-sonar-token
@@ -371,7 +366,7 @@ spec:
 // TestEnvironments mirrors environment coverage: cluster + quota fields.
 func TestEnvironments(t *testing.T) {
 	t.Cleanup(func() { del(t, envGVK, "detonation-dev") })
-	applyObject(t, fromYAML(t, `apiVersion: cpin.shikanime.studio/v1alpha1
+	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
 kind: Environment
 metadata:
   name: detonation-dev
@@ -394,6 +389,8 @@ func TestRBAC(t *testing.T) {
 		"cpin:project-read", "cpin:project-write", "cpin:project-roles-admin",
 		"cpin:project-members-admin", "cpin:project-services-admin",
 		"cpin:project-secrets-admin", "cpin:environment-admin",
+		"cpin-admin:operator", "cpin-admin:reader", "kro:cpin-orchestrator",
+		"kro:cpin-service-roles",
 	} {
 		rules, ok, _ := unstructured.NestedSlice(get(t, croleGVK, role).Object, "rules")
 		if !ok || len(rules) == 0 {

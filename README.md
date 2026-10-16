@@ -37,13 +37,13 @@ may work.
    ```
 
 4. **RBAC for the chain** (kro creates/owns Stacks; PKO workspaces need
-   TokenReview): included in `manifests/base/backend-rbac.yaml`.
+   TokenReview): included in `manifests/base/rbac.yaml`.
 
 5. **This repo**:
 
    ```sh
    kubectl apply -k manifests/overlays/default
-   kubectl wait --for=condition=Established crd/projects.cpin.shikanime.studio
+   kubectl wait --for=condition=Established crd/projects.cloud-pi-native.fr
    ```
 
 Verify: `kubectl get rgd` — all nine `cpin-*` Active; then `kubectl apply -f
@@ -52,9 +52,14 @@ e2e/project.yaml && watch kubectl get stacks`.
 ## Layout
 
 ```
-manifests/base/                     Project/Zone/Cluster/Stage RGDs, project-scoped
-                                    RGDs (Role/Member/Service/Secret/Environment),
-                                    fine-grained RBAC, backend secret
+manifests/base/resourcegraphdefinition.yaml
+                                    multi-doc RGDs: Project (seeds the five
+                                    standard ProjectRoles), Zone/Cluster/Stage,
+                                    project-scoped Role/Member/Service/Secret/
+                                    Environment
+manifests/base/rbac.yaml            fine-grained + standard-role ClusterRoles,
+                                    backend chain RBAC (single rbac.yaml per
+                                    studio convention)
 manifests/components/<svc>/           pulumi.com/v1 Program CRs, one kustomize
                                     Component per service (<svc>/program.yaml);
                                     overlays compose them per cluster
@@ -81,9 +86,14 @@ shikanime-labs/manifests points at `./manifests/overlays/<c>`.
 | Cluster | `Cluster` | Cluster | kubeconfig secret ref |
 | Stage | `Stage` | Cluster | name-only dimension |
 
-Project sub-fields (services, roles, members, environments) stay on the
-Project CR as comma/JSON strings for the Stack fan-out; the project-scoped
-CRDs are the fine-grained write surface for RBAC — each maps to a console
+Project is the Gateway-API-style "hat". Users live in the IdP (Keycloak):
+no ProjectMember CR — the K8s plane binds OIDC groups (`kind: Group`
+subjects, `/slug/console/<role>`) to the seeded native Roles, and each
+service resolves groups at login from its `rbac.<svc>.cloud-pi-native.fr`
+Role contract CRs (Harbor OIDC group→roleId, GitLab group→accessLevel).
+Environments attach by label (`cloud-pi-native.fr/project: <name>`); the
+Project RGD reads them through externalRef collections with reactive
+re-sync — same role the HTTPRoute-to-Gateway reference plays. — each maps to a console
 module and a dedicated ClusterRole (`cpin:project-roles-admin`,
 `cpin:project-members-admin`, `cpin:project-services-admin`,
 `cpin:project-secrets-admin`, `cpin:environment-admin`). Permissions stay
@@ -111,7 +121,8 @@ KRO→PKO chain, roles, members, services, secrets, environments, RBAC roles.
 
 ## Conventions
 
-- One Kubernetes kind per file, `<short-name>.yaml`, sorted `resources:` lists
+- `<resource-name>.yaml` with multi-doc files per resource; RBAC exempt as a
+  single `rbac.yaml`, sorted `resources:` lists
 - Programs are CRDs, not generated artifacts — edit
   `manifests/components/<svc>/program.yaml` directly
 - Render gate: `kubectl kustomize manifests/overlays/<cluster>`
