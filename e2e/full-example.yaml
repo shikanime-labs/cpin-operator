@@ -1,0 +1,37 @@
+# Full example deployment: Project + attached services and environment.
+# Attach sub-resources AFTER the Project exists (externalRef waits for it).
+apiVersion: cloud-pi-native.fr/v1alpha1
+kind: Project
+metadata:
+  name: detonation
+spec:
+  name: Detonation Project
+  slug: detonation
+  owner: william@shikanime.studio
+  description: e2e full example
+---
+apiVersion: cloud-pi-native.fr/v1alpha1
+kind: ProjectService
+metadata:
+  name: detonation-keycloak
+  labels:
+    cloud-pi-native.fr/project: detonation
+spec:
+  project: detonation
+  service: keycloak
+  enabled: true
+---
+apiVersion: cloud-pi-native.fr/v1alpha1
+kind: Environment
+metadata:
+  name: detonation-dev
+  labels:
+    cloud-pi-native.fr/project: detonation
+spec:
+  project: detonation
+  name: dev
+  cluster: nishir
+  stage: dev
+  cpu: 2
+  memory: 4
+  gpu: 0

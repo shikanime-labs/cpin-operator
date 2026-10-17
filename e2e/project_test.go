@@ -249,12 +249,14 @@ func TestProjectChain(t *testing.T) {
 	t.Run("apply", func(t *testing.T) {
 		applyKustomize(t, "../manifests/overlays/"+overlay)
 	})
-	t.Run("project-applied", func(t *testing.T) {
-		b, err := os.ReadFile("project.yaml")
+	t.Run("full-example-applied", func(t *testing.T) {
+		b, err := os.ReadFile("full-example.yaml")
 		if err != nil {
 			t.Fatal(err)
 		}
-		applyObject(t, fromYAML(t, string(b)))
+		for _, doc := range strings.Split(string(b), "\n---\n") {
+			applyObject(t, fromYAML(t, doc))
+		}
 	})
 	t.Run("project-ready", func(t *testing.T) {
 		waitTrue(t, projectGVK, name, "Ready", 10*time.Minute)

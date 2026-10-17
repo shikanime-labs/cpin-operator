@@ -6,4 +6,4 @@ spec:
   name: Detonation Project
   slug: detonation
   owner: william@shikanime.studio
-  services: keycloak,gitlab,harbor
+  description: e2e full example

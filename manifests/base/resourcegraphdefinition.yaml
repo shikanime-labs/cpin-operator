@@ -21,12 +21,21 @@ spec:
       slug: string
       owner: string
       description: string
-      services: string
     status:
-      services: ${schema.spec.services}
+      services: ${services.map(s, s.spec.?service.orValue("?")).join(",")}
       roles: ${roles.map(r, r.metadata.name).join(",")}
       environments: ${environments.map(e, e.metadata.name).join(",")}
   resources:
+    - id: services
+      externalRef:
+        apiVersion: cloud-pi-native.fr/v1alpha1
+        kind: ProjectService
+        metadata:
+          selector:
+            matchExpressions:
+              - key: cloud-pi-native.fr/project
+                operator: In
+                values: ["${schema.metadata.name}"]
     - id: roles
       externalRef:
         apiVersion: rbac.authorization.k8s.io/v1
@@ -89,17 +98,17 @@ spec:
             apiGroup: rbac.authorization.k8s.io
     - id: stacks
       forEach:
-        - service: ${schema.spec.services.split(",")}
+        - service: ${services}
       template:
         apiVersion: pulumi.com/v1
         kind: Stack
         metadata:
-          name: ${schema.metadata.name}-${service}
+          name: ${schema.metadata.name}-${service.spec.?service.orValue("none")}
         spec:
           backend: file:///share
-          stack: ${schema.metadata.name}-${service}
+          stack: ${schema.metadata.name}-${service.spec.?service.orValue("none")}
           programRef:
-            name: cpin-program-${service}
+            name: cpin-program-${service.spec.?service.orValue("none")}
           config:
             projectName: ${schema.spec.name}
             projectSlug: ${schema.spec.slug}
