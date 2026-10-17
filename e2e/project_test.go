@@ -43,7 +43,7 @@ var (
 	rbacRoleGVK    = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
 	rbacBindingGVK = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "RoleBinding"}
 	gitlabRoleGVK  = schema.GroupVersionKind{Group: "rbac.gitlab.cloud-pi-native.fr", Version: "v1alpha1", Kind: "Role"}
-	svcGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectService"}
+	svcGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Integration"}
 	secretGVK  = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectSecret"}
 	envGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Environment"}
 	stackGVK   = schema.GroupVersionKind{Group: "pulumi.com", Version: "v1", Kind: "Stack"}
@@ -329,11 +329,11 @@ spec:
 	del(t, gitlabRoleGVK, "gitlab-e2e-reporter")
 }
 
-// TestProjectServices mirrors project-services.e2e-spec.ts.
-func TestProjectServices(t *testing.T) {
+// TestIntegrations mirrors project-integrations.e2e-spec.ts.
+func TestIntegrations(t *testing.T) {
 	t.Cleanup(func() { del(t, svcGVK, "detonation-keycloak") })
 	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
-kind: ProjectService
+kind: Integration
 metadata:
   name: detonation-keycloak
 spec:
@@ -393,7 +393,7 @@ spec:
 func TestRBAC(t *testing.T) {
 	for _, role := range []string{
 		"cpin:project-read", "cpin:project-write", "cpin:project-roles-admin",
-		"cpin:project-members-admin", "cpin:project-services-admin",
+		"cpin:project-members-admin", "cpin:project-integrations-admin",
 		"cpin:project-secrets-admin", "cpin:environment-admin",
 		"cpin-admin:operator", "cpin-admin:reader", "kro:cpin-orchestrator",
 		"kro:cpin-service-roles",

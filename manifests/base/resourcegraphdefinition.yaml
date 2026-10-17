@@ -6,7 +6,7 @@
 # cloud-pi-native.fr/project label is the projection of projectRef that the
 # Project collections join on (kro selects collections by label only) — the
 # only label kept, everything else drops labels it never selected by.
-# Deployment is decentralized: each ProjectService RGD owns exactly one
+# Deployment is decentralized: each Integration RGD owns exactly one
 # pulumi Stack (its program); the Project graph only seeds RBAC and
 # aggregates status from its collections.
 apiVersion: kro.run/v1alpha1
@@ -31,7 +31,7 @@ spec:
     - id: services
       externalRef:
         apiVersion: cloud-pi-native.fr/v1alpha1
-        kind: ProjectService
+        kind: Integration
         metadata:
           selector:
             matchExpressions:
@@ -70,7 +70,7 @@ spec:
             cloud-pi-native.fr/project: ${schema.metadata.name}
         rules:
           - apiGroups: ["cloud-pi-native.fr"]
-            resources: ["projects", "environments", "projectservices", "projectsecrets"]
+            resources: ["projects", "environments", "integrations", "projectsecrets"]
             verbs: ${std.verbs}
     - id: groupBindings
       forEach:
@@ -152,12 +152,12 @@ spec:
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
-  name: cpin-project-service
+  name: cpin-integration
 spec:
   schema:
     group: cloud-pi-native.fr
     apiVersion: v1alpha1
-    kind: ProjectService
+    kind: Integration
     scope: Namespaced
     spec:
       projectRef:

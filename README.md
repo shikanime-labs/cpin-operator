@@ -79,7 +79,7 @@ shikanime-labs/manifests points at `./manifests/overlays/<c>`.
 | Project | `Project` | Namespaced | one Stack per `spec.services` (forEach) |
 | ProjectRole | `ProjectRole` | Namespaced | aggregate in Project Stack config |
 | ProjectMember | `ProjectMember` | Namespaced | aggregate in Project Stack config |
-| ProjectService | `ProjectService` | Namespaced | aggregate in Project Stack config |
+| Integration | `Integration` | Namespaced | aggregate in Project Stack config |
 | ProjectSecret | `ProjectSecret` | Namespaced | aggregate in Project Stack config |
 | Environment | `Environment` | Namespaced | aggregate in Project Stack config |
 | Zone | `Zone` | Cluster | declarative topology (vault mount via socle) |
@@ -95,7 +95,7 @@ Environments attach by label (`cloud-pi-native.fr/project: <name>`); the
 Project RGD reads them through externalRef collections with reactive
 re-sync — same role the HTTPRoute-to-Gateway reference plays. — each maps to a console
 module and a dedicated ClusterRole (`cpin:project-roles-admin`,
-`cpin:project-members-admin`, `cpin:project-services-admin`,
+`cpin:project-members-admin`, `cpin:project-integrations-admin`,
 `cpin:project-secrets-admin`, `cpin:environment-admin`). Permissions stay
 integer bitmasks (decode at API layer).
 
