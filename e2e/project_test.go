@@ -379,7 +379,7 @@ spec:
   stage: dev
   quota: '{"cpu":2,"memory":4,"gpu":0}'
 `))
-	if out := field(t, get(t, envGVK, "detonation-dev"), "spec", "cluster"); out != "nishir" {
+	if out := field(t, get(t, envGVK, "detonation-dev"), "spec", "clusterRef"); out != "nishir" {
 		t.Fatalf("cluster: %q", out)
 	}
 	del(t, envGVK, "detonation-dev")

@@ -17,7 +17,7 @@ metadata:
   labels:
     cloud-pi-native.fr/project: detonation
 spec:
-  project: detonation
+  projectRef: detonation
   service: keycloak
   enabled: true
 ---
@@ -28,10 +28,10 @@ metadata:
   labels:
     cloud-pi-native.fr/project: detonation
 spec:
-  project: detonation
+  projectRef: detonation
   name: dev
-  cluster: nishir
-  stage: dev
+  clusterRef: nishir
+  stageRef: dev
   cpu: 2
   memory: 4
   gpu: 0

@@ -1,10 +1,11 @@
 # Project: the Gateway-API-style "hat" CRD. Users live in the IdP (Keycloak);
 # the K8s plane binds OIDC groups (kind: Group subjects) to native Roles per
 # standard role, services resolve groups at login from the rbac.<svc> contract
-# CRs — no ProjectMember mirror. Attachments (ProjectService, Environment,
-# Roles) match an explicit spec.selector (Cluster-API style); it defaults to
-# the Project name. externalRef collections aggregate into Stack config with
-# reactive re-sync.
+# CRs — no ProjectMember mirror. Attachments reference their parent strictly
+# (projectRef/clusterRef/stageRef/zoneRef — required, no fallbacks); the
+# cloud-pi-native.fr/project label is the projection of projectRef that the
+# Project collections join on (kro selects collections by label only).
+# externalRef collections aggregate into Stack config with reactive re-sync.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -20,9 +21,8 @@ spec:
       slug: string
       owner: string
       description: string
-      selector: string | optional
     status:
-      services: ${services.map(s, s.spec.?service.orValue("?")).join(",")}
+      services: ${services.map(s, s.spec.service).join(",")}
       roles: ${roles.map(r, r.metadata.name).join(",")}
       environments: ${environments.map(e, e.metadata.name).join(",")}
   resources:
@@ -35,7 +35,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
+                values: ["${schema.metadata.name}"]
     - id: roles
       externalRef:
         apiVersion: rbac.authorization.k8s.io/v1
@@ -45,7 +45,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
+                values: ["${schema.metadata.name}"]
     - id: environments
       externalRef:
         apiVersion: cloud-pi-native.fr/v1alpha1
@@ -55,7 +55,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
+                values: ["${schema.metadata.name}"]
     - id: gitlabRoles
       externalRef:
         apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
@@ -76,7 +76,7 @@ spec:
             cloud-pi-native.fr/project: ${schema.metadata.name}
         rules:
           - apiGroups: ["cloud-pi-native.fr"]
-            resources: ["projects", "environments", "projectmembers", "projectservices", "projectsecrets"]
+            resources: ["projects", "environments", "projectservices", "projectsecrets"]
             verbs: ${std.verbs}
     - id: groupBindings
       forEach:
@@ -103,20 +103,20 @@ spec:
         apiVersion: pulumi.com/v1
         kind: Stack
         metadata:
-          name: ${schema.metadata.name}-${service.spec.?service.orValue("none")}
+          name: ${schema.metadata.name}-${service.spec.service}
         spec:
           backend: file:///share
-          stack: ${schema.metadata.name}-${service.spec.?service.orValue("none")}
+          stack: ${schema.metadata.name}-${service.spec.service}
           programRef:
-            name: cpin-program-${service.spec.?service.orValue("none")}
+            name: cpin-program-${service.spec.service}
           config:
             projectName: ${schema.spec.name}
             projectSlug: ${schema.spec.slug}
             projectOwner: ${schema.spec.owner}
             roles: ${roles.map(r, r.metadata.name).join(",")}
-            gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.?role.orValue("?") + "=" + string(r.spec.?accessLevel.orValue(0))).join(",")}
-            gitlabRoles: ${gitlabRoles.map(r, r.spec.?role.orValue("?") + ":" + string(r.spec.?accessLevel.orValue(0))).join(",")}
-            environments: ${environments.map(e, e.spec.?name.orValue("env") + "@" + e.spec.?cluster.orValue("none")).join(",")}
+            gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.role + "=" + string(r.spec.accessLevel)).join(",")}
+            gitlabRoles: ${gitlabRoles.map(r, r.spec.role + ":" + string(r.spec.accessLevel)).join(",")}
+            environments: ${environments.map(e, e.spec.name + "@" + e.spec.clusterRef).join(",")}
           envRefs:
             PULUMI_CONFIG_PASSPHRASE:
               type: Secret
@@ -159,7 +159,6 @@ spec:
     scope: Cluster
     spec:
       name: string
-      selector: string | optional
     status: {}
   resources: []
 ---
@@ -177,7 +176,7 @@ spec:
       label: string
       privacy: string | default="public"
       secretName: string
-      zone: string
+      zoneRef: string
       memory: integer | default=0
       cpu: integer | default=0
       gpu: integer | default=0
@@ -195,7 +194,7 @@ spec:
     kind: ProjectService
     scope: Namespaced
     spec:
-      project: string
+      projectRef: string
       service: string
       enabled: boolean
     status: {}
@@ -212,7 +211,7 @@ spec:
     kind: ProjectSecret
     scope: Namespaced
     spec:
-      project: string
+      projectRef: string
       key: string
       value: string
     status: {}
@@ -229,10 +228,10 @@ spec:
     kind: Environment
     scope: Namespaced
     spec:
-      project: string
+      projectRef: string
       name: string
-      cluster: string
-      stage: string
+      clusterRef: string
+      stageRef: string
       cpu: integer
       memory: integer
       gpu: integer
