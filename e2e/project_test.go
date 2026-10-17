@@ -308,7 +308,6 @@ metadata:
 spec:
   project: detonation
   service: keycloak
-  enabled: true
 `))
 	if out := field(t, get(t, svcGVK, "detonation-keycloak"), "spec", "service"); out != "keycloak" {
 		t.Fatalf("service: %q", out)

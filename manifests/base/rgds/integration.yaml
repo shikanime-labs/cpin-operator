@@ -14,7 +14,6 @@ spec:
         kind: Project
         name: string
       service: string
-      enabled: boolean
       programRef:
         group: pulumi.com
         kind: Program
@@ -52,7 +51,6 @@ spec:
             values:
             - ${schema.spec.projectRef.name}
   - id: stack
-    includeWhen: ${schema.spec.enabled}
     template:
       apiVersion: pulumi.com/v1
       kind: Stack

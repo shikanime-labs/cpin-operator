@@ -19,7 +19,6 @@ spec:
     kind: Project
     name: detonation
   service: keycloak
-  enabled: true
   programRef:
     group: pulumi.com
     kind: Program
