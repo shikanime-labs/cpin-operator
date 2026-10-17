@@ -59,10 +59,3 @@ jobs:
           github-token: ${{ steps.createGithubAppToken.outputs.token }}
           ref: ${{ github.ref_name || github.event.inputs.ref_name }}
           repo: ${{ github.repository }}
-  skaffold:
-    permissions:
-      contents: read
-      packages: write
-    secrets:
-      OPERATOR_PRIVATE_KEY: ${{ secrets.OPERATOR_PRIVATE_KEY }}
-    uses: ./.github/workflows/skaffold.yaml
