@@ -1,11 +1,10 @@
 # Project: the Gateway-API-style "hat" CRD. Users live in the IdP (Keycloak);
 # the K8s plane binds OIDC groups (kind: Group subjects) to native Roles per
 # standard role, services resolve groups at login from the rbac.<svc> contract
-# CRs — no ProjectMember mirror. Environments attach by label
-# (cloud-pi-native.fr/project); externalRef collections aggregate into Stack
-# config with reactive re-sync.
-
-# is proven on kro v0.9.
+# CRs — no ProjectMember mirror. Attachments (ProjectService, Environment,
+# Roles) match an explicit spec.selector (Cluster-API style); it defaults to
+# the Project name. externalRef collections aggregate into Stack config with
+# reactive re-sync.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -21,6 +20,7 @@ spec:
       slug: string
       owner: string
       description: string
+      selector: string | optional
     status:
       services: ${services.map(s, s.spec.?service.orValue("?")).join(",")}
       roles: ${roles.map(r, r.metadata.name).join(",")}
@@ -35,7 +35,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.metadata.name}"]
+                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
     - id: roles
       externalRef:
         apiVersion: rbac.authorization.k8s.io/v1
@@ -45,7 +45,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.metadata.name}"]
+                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
     - id: environments
       externalRef:
         apiVersion: cloud-pi-native.fr/v1alpha1
@@ -55,7 +55,7 @@ spec:
             matchExpressions:
               - key: cloud-pi-native.fr/project
                 operator: In
-                values: ["${schema.metadata.name}"]
+                values: ["${schema.spec.?selector.orValue(schema.metadata.name)}"]
     - id: gitlabRoles
       externalRef:
         apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
@@ -159,7 +159,7 @@ spec:
     scope: Cluster
     spec:
       name: string
-      clusters: string
+      selector: string | optional
     status: {}
   resources: []
 ---
