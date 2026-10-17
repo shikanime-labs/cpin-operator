@@ -373,13 +373,17 @@ kind: Environment
 metadata:
   name: detonation-dev
 spec:
-  project: detonation
+  projectRef: {group: cloud-pi-native.fr, kind: Project, name: detonation}
   name: dev
-  cluster: nishir
-  stage: dev
-  quota: '{"cpu":2,"memory":4,"gpu":0}'
+  clusterRef: {group: cloud-pi-native.fr, kind: Cluster, name: nishir}
+  stageRef: {group: cloud-pi-native.fr, kind: Stage, name: dev}
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+      gpu: 0
 `))
-	if out := field(t, get(t, envGVK, "detonation-dev"), "spec", "cluster"); out != "nishir" {
+	if out := field(t, get(t, envGVK, "detonation-dev"), "spec", "clusterRef", "name"); out != "nishir" {
 		t.Fatalf("cluster: %q", out)
 	}
 	del(t, envGVK, "detonation-dev")
