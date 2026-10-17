@@ -250,9 +250,11 @@ spec:
         group: cloud-pi-native.fr
         kind: Stage
         name: string
-      cpu: integer
-      memory: integer
-      gpu: integer
+      resources:
+        requests:
+          cpu: string
+          memory: string
+          gpu: integer | default=0
     status: {}
   resources: []
 ---

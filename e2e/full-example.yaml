@@ -44,6 +44,8 @@ spec:
     group: cloud-pi-native.fr
     kind: Stage
     name: dev
-  cpu: 2
-  memory: 4
-  gpu: 0
+  resources:
+    requests:
+      cpu: "2"
+      memory: 4Gi
+      gpu: 0
