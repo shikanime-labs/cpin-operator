@@ -5,7 +5,6 @@ kind: Project
 metadata:
   name: detonation
 spec:
-  name: Detonation Project
   slug: detonation
   owner: william@shikanime.studio
   description: e2e full example
@@ -35,7 +34,6 @@ spec:
     group: cloud-pi-native.fr
     kind: Project
     name: detonation
-  name: dev
   clusterRef:
     group: cloud-pi-native.fr
     kind: Cluster

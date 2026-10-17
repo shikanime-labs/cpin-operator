@@ -116,8 +116,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin-admin:operator
-  labels:
-    cloud-pi-native.fr/admin-role: "true"
 rules:
 - apiGroups: ["cloud-pi-native.fr"]
   resources: ["projects", "environments", "projectmembers", "projectservices", "projectsecrets", "clusters", "zones", "stages"]
@@ -129,8 +127,6 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin-admin:reader
-  labels:
-    cloud-pi-native.fr/admin-role: "true"
 rules:
 - apiGroups: ["cloud-pi-native.fr"]
   resources: ["projects", "environments", "projectmembers", "projectservices", "projectsecrets", "clusters", "zones", "stages"]

@@ -4,7 +4,8 @@
 # CRs — no ProjectMember mirror. Attachments reference their parent strictly
 # (projectRef/clusterRef/stageRef/zoneRef — required, no fallbacks); the
 # cloud-pi-native.fr/project label is the projection of projectRef that the
-# Project collections join on (kro selects collections by label only).
+# Project collections join on (kro selects collections by label only) — the
+# only label kept, everything else drops labels it never selected by.
 # externalRef collections aggregate into Stack config with reactive re-sync.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
@@ -17,7 +18,6 @@ spec:
     kind: Project
     scope: Namespaced
     spec:
-      name: string
       slug: string
       owner: string
       description: string
@@ -110,13 +110,13 @@ spec:
           programRef:
             name: cpin-program-${service.spec.service}
           config:
-            projectName: ${schema.spec.name}
+            projectName: ${schema.metadata.name}
             projectSlug: ${schema.spec.slug}
             projectOwner: ${schema.spec.owner}
             roles: ${roles.map(r, r.metadata.name).join(",")}
             gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.role + "=" + string(r.spec.accessLevel)).join(",")}
             gitlabRoles: ${gitlabRoles.map(r, r.spec.role + ":" + string(r.spec.accessLevel)).join(",")}
-            environments: ${environments.map(e, e.spec.name + "@" + e.spec.clusterRef.name).join(",")}
+            environments: ${environments.map(e, e.metadata.name + "@" + e.spec.clusterRef.name).join(",")}
           envRefs:
             PULUMI_CONFIG_PASSPHRASE:
               type: Secret
@@ -157,8 +157,7 @@ spec:
     apiVersion: v1alpha1
     kind: Stage
     scope: Cluster
-    spec:
-      name: string
+    spec: {}
     status: {}
   resources: []
 ---
@@ -241,7 +240,6 @@ spec:
         group: cloud-pi-native.fr
         kind: Project
         name: string
-      name: string
       clusterRef:
         group: cloud-pi-native.fr
         kind: Cluster
