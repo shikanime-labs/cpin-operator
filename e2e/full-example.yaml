@@ -22,6 +22,10 @@ spec:
     name: detonation
   service: keycloak
   enabled: true
+  programRef:
+    group: pulumi.com
+    kind: Program
+    name: cpin-program-keycloak
 ---
 apiVersion: cloud-pi-native.fr/v1alpha1
 kind: Environment

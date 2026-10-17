@@ -166,6 +166,10 @@ spec:
         name: string
       service: string
       enabled: boolean
+      programRef:
+        group: pulumi.com
+        kind: Program
+        name: string
     status:
       state: ${stack.status.?state.orValue("Pending")}
   resources:
@@ -207,7 +211,7 @@ spec:
           backend: file:///share
           stack: ${schema.spec.projectRef.name}-${schema.spec.service}
           programRef:
-            name: cpin-program-${schema.spec.service}
+            name: ${schema.spec.programRef.name}
           config:
             projectName: ${schema.spec.projectRef.name}
             projectSlug: ${project.spec.slug}
