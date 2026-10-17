@@ -15,6 +15,7 @@ spec:
     status:
       services: ${services.map(s, s.spec.service).join(",")}
       roles: ${roles.map(r, r.metadata.name).join(",")}
+      roleBindings: ${bindings.map(b, b.metadata.name).join(",")}
       environments: ${environments.map(e, e.metadata.name).join(",")}
   resources:
   - id: services
@@ -50,40 +51,14 @@ spec:
             operator: In
             values:
             - ${schema.metadata.name}
-  - id: stdRoles
-    forEach:
-    - std: ${[{"suffix":"admin","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"devops","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"developer","verbs":["get","list","watch"]},{"suffix":"readonly","verbs":["get","list","watch"]},{"suffix":"security","verbs":["get","list","watch"]}]}
-    template:
-      apiVersion: rbac.authorization.k8s.io/v1
-      kind: Role
-      metadata:
-        name: ${schema.metadata.name}-${std.suffix}
-        labels:
-          cloud-pi-native.fr/project: ${schema.metadata.name}
-      rules:
-      - apiGroups:
-        - cloud-pi-native.fr
-        resources:
-        - projects
-        - environments
-        - integrations
-        - projectsecrets
-        verbs: ${std.verbs}
-  - id: groupBindings
-    forEach:
-    - std: ${[{"suffix":"admin"},{"suffix":"devops"},{"suffix":"developer"},{"suffix":"readonly"},{"suffix":"security"}]}
-    template:
+  - id: bindings
+    externalRef:
       apiVersion: rbac.authorization.k8s.io/v1
       kind: RoleBinding
       metadata:
-        name: ${schema.metadata.name}-${std.suffix}
-        labels:
-          cloud-pi-native.fr/project: ${schema.metadata.name}
-      roleRef:
-        apiGroup: rbac.authorization.k8s.io
-        kind: Role
-        name: ${schema.metadata.name}-${std.suffix}
-      subjects:
-      - kind: Group
-        name: ${schema.spec.slug}/console/${std.suffix}
-        apiGroup: rbac.authorization.k8s.io
+        selector:
+          matchExpressions:
+          - key: cloud-pi-native.fr/project
+            operator: In
+            values:
+            - ${schema.metadata.name}
