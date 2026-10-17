@@ -6,7 +6,9 @@
 # cloud-pi-native.fr/project label is the projection of projectRef that the
 # Project collections join on (kro selects collections by label only) — the
 # only label kept, everything else drops labels it never selected by.
-# externalRef collections aggregate into Stack config with reactive re-sync.
+# Deployment is decentralized: each ProjectService RGD owns exactly one
+# pulumi Stack (its program); the Project graph only seeds RBAC and
+# aggregates status from its collections.
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:
@@ -56,14 +58,6 @@ spec:
               - key: cloud-pi-native.fr/project
                 operator: In
                 values: ["${schema.metadata.name}"]
-    - id: gitlabRoles
-      externalRef:
-        apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
-        kind: Role
-        metadata:
-          selector:
-            matchLabels:
-              cloud-pi-native.fr/service-role: "true"
     - id: stdRoles
       forEach:
         - std: ${[{"suffix":"admin","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"devops","verbs":["get","list","watch","create","update","patch","delete"]},{"suffix":"developer","verbs":["get","list","watch"]},{"suffix":"readonly","verbs":["get","list","watch"]},{"suffix":"security","verbs":["get","list","watch"]}]}
@@ -96,35 +90,6 @@ spec:
           - kind: Group
             name: ${schema.spec.slug}/console/${std.suffix}
             apiGroup: rbac.authorization.k8s.io
-    - id: stacks
-      forEach:
-        - service: ${services}
-      template:
-        apiVersion: pulumi.com/v1
-        kind: Stack
-        metadata:
-          name: ${schema.metadata.name}-${service.spec.service}
-        spec:
-          backend: file:///share
-          stack: ${schema.metadata.name}-${service.spec.service}
-          programRef:
-            name: cpin-program-${service.spec.service}
-          config:
-            projectName: ${schema.metadata.name}
-            projectSlug: ${schema.spec.slug}
-            projectOwner: ${schema.spec.owner}
-            roles: ${roles.map(r, r.metadata.name).join(",")}
-            gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.role + "=" + string(r.spec.accessLevel)).join(",")}
-            gitlabRoles: ${gitlabRoles.map(r, r.spec.role + ":" + string(r.spec.accessLevel)).join(",")}
-            environments: ${environments.map(e, e.metadata.name + "@" + e.spec.clusterRef.name).join(",")}
-          envRefs:
-            PULUMI_CONFIG_PASSPHRASE:
-              type: Secret
-              secret:
-                name: pulumi-passphrase
-                key: PULUMI_CONFIG_PASSPHRASE
-          destroyOnFinalize: true
-          resyncFrequencySeconds: 300
 
 ---
 
@@ -202,8 +167,62 @@ spec:
         name: string
       service: string
       enabled: boolean
-    status: {}
-  resources: []
+    status:
+      state: ${stack.status.?state.orValue("Pending")}
+  resources:
+    - id: project
+      externalRef:
+        apiVersion: cloud-pi-native.fr/v1alpha1
+        kind: Project
+        metadata:
+          name: ${schema.spec.projectRef.name}
+          namespace: ${schema.metadata.namespace}
+    - id: roles
+      externalRef:
+        apiVersion: rbac.authorization.k8s.io/v1
+        kind: Role
+        metadata:
+          selector:
+            matchExpressions:
+              - key: cloud-pi-native.fr/project
+                operator: In
+                values: ["${schema.spec.projectRef.name}"]
+    - id: environments
+      externalRef:
+        apiVersion: cloud-pi-native.fr/v1alpha1
+        kind: Environment
+        metadata:
+          selector:
+            matchExpressions:
+              - key: cloud-pi-native.fr/project
+                operator: In
+                values: ["${schema.spec.projectRef.name}"]
+    - id: stack
+      includeWhen: ${schema.spec.enabled}
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: ${schema.spec.projectRef.name}-${schema.spec.service}
+        spec:
+          backend: file:///share
+          stack: ${schema.spec.projectRef.name}-${schema.spec.service}
+          programRef:
+            name: cpin-program-${schema.spec.service}
+          config:
+            projectName: ${schema.spec.projectRef.name}
+            projectSlug: ${project.spec.slug}
+            projectOwner: ${project.spec.owner}
+            roles: ${roles.map(r, r.metadata.name).join(",")}
+            environments: ${environments.map(e, e.metadata.name + "@" + e.spec.clusterRef.name).join(",")}
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
 ---
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
