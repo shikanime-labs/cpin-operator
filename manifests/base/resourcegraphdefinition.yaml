@@ -108,8 +108,31 @@ spec:
       label: string
       description: string | default=""
       argocdUrl: string
-    status: {}
-  resources: []
+    status:
+      state: ${stack.status.?state.orValue("Pending")}
+  resources:
+    - id: stack
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: zone-${schema.metadata.name}
+          namespace: default
+        spec:
+          backend: file:///share
+          stack: zone-${schema.metadata.name}
+          programRef:
+            name: cpin-program-zone
+          config:
+            domain: ${schema.spec.argocdUrl}
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
 ---
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
@@ -297,8 +320,29 @@ spec:
       role: string
       accessLevel: integer
       projectMemberGroup: string
-    status: {}
-  resources: []
+    status:
+      state: ${stack.status.?state.orValue("Pending")}
+  resources:
+    - id: stack
+      template:
+        apiVersion: pulumi.com/v1
+        kind: Stack
+        metadata:
+          name: gitlab
+          namespace: default
+        spec:
+          backend: file:///share
+          stack: gitlab
+          programRef:
+            name: cpin-program-gitlab
+          envRefs:
+            PULUMI_CONFIG_PASSPHRASE:
+              type: Secret
+              secret:
+                name: pulumi-passphrase
+                key: PULUMI_CONFIG_PASSPHRASE
+          destroyOnFinalize: true
+          resyncFrequencySeconds: 300
 ---
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
