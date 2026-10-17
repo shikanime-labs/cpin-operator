@@ -1,0 +1,17 @@
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-harbor-install
+program:
+  name: cpin-harbor-install
+  runtime: yaml
+  resources:
+    harbor:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: harbor
+        namespace: harbor
+        repositoryOpts:
+          repo: https://helm.goharbor.io
+        chart: harbor
+        version: 1.16.0

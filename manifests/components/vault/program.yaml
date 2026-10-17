@@ -19,26 +19,33 @@ program:
       properties:
         kind: acl-policy
         name: app--${projectSlug}--admin
-        policy: |
-          path "${projectSlug}/*" { capabilities = ["create", "read", "update", "delete", "list"] }
+        policy: 'path "${projectSlug}/*" { capabilities = ["create", "read", "update", "delete", "list"] }
+
+          '
     appDevopsPolicy:
       type: cpin:vault:Artifact
       properties:
         kind: acl-policy
         name: project--${projectSlug}--devops
-        policy: |
-          path "${projectSlug}/data/*" { capabilities = ["create", "read", "update", "delete", "list"] }
+        policy: 'path "${projectSlug}/data/*" { capabilities = ["create", "read", "update", "delete", "list"] }
+
           path "${projectSlug}/metadata/*" { capabilities = ["read", "list"] }
+
           path "${projectSlug}/delete/*" { capabilities = ["update"] }
+
           path "${projectSlug}/undelete/*" { capabilities = ["update"] }
+
           path "${projectSlug}/destroy/*" { capabilities = ["update"] }
+
+          '
     appDeveloperPolicy:
       type: cpin:vault:Artifact
       properties:
         kind: acl-policy
         name: project--${projectSlug}--developer
-        policy: |
-          path "${projectSlug}/data/*" { capabilities = ["list"] }
+        policy: 'path "${projectSlug}/data/*" { capabilities = ["list"] }
+
+          '
         options:
           note: console binds the readonly policy body to the developer scope
     platformAdminPolicy:
@@ -46,8 +53,9 @@ program:
       properties:
         kind: acl-policy
         name: platform--admin
-        policy: |
-          path "sys/*" { capabilities = ["create", "read", "update", "delete", "list", "sudo"] }
+        policy: 'path "sys/*" { capabilities = ["create", "read", "update", "delete", "list", "sudo"] }
+
+          '
     projectAdminGroup:
       type: cpin:vault:Artifact
       properties:
@@ -110,15 +118,6 @@ program:
         name: /console/admin
         group: ${consoleAdminGroup.name}
         mount: oidc/
-    installVault:
-      type: kubernetes:helm.sh/v3:Release
-      properties:
-        name: vault
-        namespace: vault
-        repositoryOpts:
-          repo: https://helm.releases.hashicorp.com
-        chart: vault
-        version: ${vaultVersion}
   outputs:
     policyNames:
     - ${appAdminPolicy.name}

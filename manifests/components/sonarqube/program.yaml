@@ -102,15 +102,6 @@ program:
         projectKey: ${project.key}
         options:
           qualityGateWait: true
-    installSonarqube:
-      type: kubernetes:helm.sh/v3:Release
-      properties:
-        name: sonarqube
-        namespace: sonarqube
-        repositoryOpts:
-          repo: https://sonarsource.github.io/helm-chart-sonarqube/
-        chart: sonarqube
-        version: ${sonarqubeVersion}
   outputs:
     projectKey: ${project.key}
     robotLogin: ${robotAccount.login}

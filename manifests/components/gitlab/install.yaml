@@ -1,0 +1,17 @@
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-gitlab-install
+program:
+  name: cpin-gitlab-install
+  runtime: yaml
+  resources:
+    gitlab:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: gitlab
+        namespace: gitlab
+        repositoryOpts:
+          repo: https://charts.gitlab.io
+        chart: gitlab
+        version: 9.4.1

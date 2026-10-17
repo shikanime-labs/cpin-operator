@@ -28,15 +28,6 @@ program:
       properties:
         min: 1
         max: 100
-    installHarbor:
-      type: kubernetes:helm.sh/v3:Release
-      properties:
-        name: harbor
-        namespace: harbor
-        repositoryOpts:
-          repo: https://helm.goharbor.io
-        chart: harbor
-        version: ${harborVersion}
   outputs:
     robots: ro+rw
     retention: latestPushedK=10

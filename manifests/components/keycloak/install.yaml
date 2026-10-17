@@ -1,0 +1,17 @@
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-keycloak-install
+program:
+  name: cpin-keycloak-install
+  runtime: yaml
+  resources:
+    keycloak:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: keycloak
+        namespace: keycloak
+        repositoryOpts:
+          repo: https://charts.bitnami.com/bitnami
+        chart: keycloak
+        version: 25.2.0

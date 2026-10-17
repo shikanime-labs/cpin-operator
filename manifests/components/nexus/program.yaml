@@ -85,15 +85,6 @@ program:
         options:
           access: write
           note: 'project: ${projectName}, contact: ${projectOwner}'
-    installNexus:
-      type: kubernetes:helm.sh/v3:Release
-      properties:
-        name: nexus3
-        namespace: nexus
-        repositoryOpts:
-          repo: https://stevehipwell.github.io/helm-charts/
-        chart: nexus3
-        version: ${nexusVersion}
   outputs:
     mavenReleaseRepo: ${mavenReleaseRepo.name}
     mavenSnapshotRepo: ${mavenSnapshotRepo.name}
