@@ -9,5 +9,9 @@ components:
   - ../../components/keycloak
   - ../../components/nexus
   - ../../components/sonarqube
-  - ../../components/socle
+  - ../../components/certmanager
+  - ../../components/cnpg
+  - ../../components/glexporter
+  - ../../components/kyverno
+  - ../../components/prometheus
   - ../../components/vault

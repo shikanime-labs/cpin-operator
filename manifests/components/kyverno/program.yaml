@@ -1,0 +1,24 @@
+apiVersion: pulumi.com/v1
+kind: Program
+metadata:
+  name: cpin-program-kyverno
+program:
+  name: cpin-kyverno
+  description: "kyverno install plane \u2014 carved from the socle mega-program"
+  runtime: yaml
+  config:
+    domain:
+      type: String
+    kyvernoVersion:
+      type: String
+      default: 3.1.4
+  resources:
+    kyverno:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: kyverno
+        namespace: kyverno
+        repositoryOpts:
+          repo: https://kyverno.github.io/kyverno/
+        chart: kyverno
+        version: ${kyvernoVersion}

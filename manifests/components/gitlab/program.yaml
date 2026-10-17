@@ -75,6 +75,15 @@ program:
           - /console/security
         options:
           note: member->true, non-member->false, empty mapping->undefined no-op
+    installGitlab:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: gitlab
+        namespace: gitlab
+        repositoryOpts:
+          repo: https://charts.gitlab.io
+        chart: gitlab
+        version: ${gitlabVersion}
   outputs:
     projectGroupPath: ${projectGroup.path}
     mirrorRobotId: ${mirrorRobot.id}

@@ -1,4 +1,3 @@
-# keycloak stand-in on the random provider; real provider when credentials land
 apiVersion: pulumi.com/v1
 kind: Program
 metadata:
@@ -26,5 +25,14 @@ program:
         length: 24
         special: false
         upper: false
+    installKeycloak:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: keycloak
+        namespace: keycloak
+        repositoryOpts:
+          repo: https://charts.bitnami.com/bitnami
+        chart: keycloak
+        version: ${keycloakVersion}
   outputs:
     groupPaths: '[/${projectSlug}, /${projectSlug}/console, ...roles]'

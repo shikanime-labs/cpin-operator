@@ -31,6 +31,15 @@ program:
       type: cpin:argocd:VaultAppRole
       properties:
         projectName: ${projectName}
+    installArgocd:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: argocd
+        namespace: argocd
+        repositoryOpts:
+          repo: https://argoproj.github.io/argo-helm
+        chart: argo-cd
+        version: ${argocdVersion}
   outputs:
     valuesPath: ${environmentValues.repoPath}
     appProjectPrefix: ${appProject.namePrefix}

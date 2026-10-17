@@ -123,6 +123,15 @@ program:
         name: /console/admin
         group: ${consoleAdminGroup.name}
         mount: oidc/
+    installVault:
+      type: kubernetes:helm.sh/v3:Release
+      properties:
+        name: vault
+        namespace: vault
+        repositoryOpts:
+          repo: https://helm.releases.hashicorp.com
+        chart: vault
+        version: ${vaultVersion}
   outputs:
     policyNames:
     - ${appAdminPolicy.name}
