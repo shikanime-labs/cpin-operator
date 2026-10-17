@@ -1,4 +1,22 @@
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
-resources:
-- program.yaml
+helmCharts:
+- name: cert-manager
+  repo: https://charts.jetstack.io
+  version: 1.14.3
+  releaseName: cert-manager
+  namespace: cert-manager
+- name: cloudnative-pg
+  repo: https://cloudnative-pg.github.io/charts
+  version: 0.27.0
+  releaseName: cnpg
+  namespace: cnpg-system
+- name: kyverno
+  repo: https://kyverno.github.io/kyverno
+  version: 3.1.4
+  releaseName: kyverno
+  namespace: kyverno
+- name: kube-prometheus-stack
+  repo: https://prometheus-community.github.io/helm-charts
+  releaseName: prometheus
+  namespace: monitoring
