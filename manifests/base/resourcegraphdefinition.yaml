@@ -116,7 +116,7 @@ spec:
             roles: ${roles.map(r, r.metadata.name).join(",")}
             gitlabRoleMapping: ${gitlabRoles.map(r, r.spec.role + "=" + string(r.spec.accessLevel)).join(",")}
             gitlabRoles: ${gitlabRoles.map(r, r.spec.role + ":" + string(r.spec.accessLevel)).join(",")}
-            environments: ${environments.map(e, e.spec.name + "@" + e.spec.clusterRef).join(",")}
+            environments: ${environments.map(e, e.spec.name + "@" + e.spec.clusterRef.name).join(",")}
           envRefs:
             PULUMI_CONFIG_PASSPHRASE:
               type: Secret
@@ -176,7 +176,10 @@ spec:
       label: string
       privacy: string | default="public"
       secretName: string
-      zoneRef: string
+      zoneRef:
+        group: cloud-pi-native.fr
+        kind: Zone
+        name: string
       memory: integer | default=0
       cpu: integer | default=0
       gpu: integer | default=0
@@ -194,7 +197,10 @@ spec:
     kind: ProjectService
     scope: Namespaced
     spec:
-      projectRef: string
+      projectRef:
+        group: cloud-pi-native.fr
+        kind: Project
+        name: string
       service: string
       enabled: boolean
     status: {}
@@ -211,7 +217,10 @@ spec:
     kind: ProjectSecret
     scope: Namespaced
     spec:
-      projectRef: string
+      projectRef:
+        group: cloud-pi-native.fr
+        kind: Project
+        name: string
       key: string
       value: string
     status: {}
@@ -228,10 +237,19 @@ spec:
     kind: Environment
     scope: Namespaced
     spec:
-      projectRef: string
+      projectRef:
+        group: cloud-pi-native.fr
+        kind: Project
+        name: string
       name: string
-      clusterRef: string
-      stageRef: string
+      clusterRef:
+        group: cloud-pi-native.fr
+        kind: Cluster
+        name: string
+      stageRef:
+        group: cloud-pi-native.fr
+        kind: Stage
+        name: string
       cpu: integer
       memory: integer
       gpu: integer
