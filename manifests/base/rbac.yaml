@@ -123,30 +123,6 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kro:cpin-service-roles
-rules:
-- apiGroups:
-  - rbac.gitlab.cloud-pi-native.fr
-  - rbac.harbor.cloud-pi-native.fr
-  - rbac.nexus.cloud-pi-native.fr
-  - rbac.sonarqube.cloud-pi-native.fr
-  - rbac.vault.cloud-pi-native.fr
-  - rbac.argocd.cloud-pi-native.fr
-  - rbac.keycloak.cloud-pi-native.fr
-  resources:
-  - roles
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
   name: kro:cpin-native-rbac
 rules:
 - apiGroups:

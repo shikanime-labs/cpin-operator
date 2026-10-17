@@ -42,7 +42,6 @@ var (
 	projectGVK = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Project"}
 	rbacRoleGVK    = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
 	rbacBindingGVK = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "RoleBinding"}
-	gitlabRoleGVK  = schema.GroupVersionKind{Group: "rbac.gitlab.cloud-pi-native.fr", Version: "v1alpha1", Kind: "Role"}
 	svcGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Integration"}
 	secretGVK  = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectSecret"}
 	envGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Environment"}
@@ -304,31 +303,6 @@ func TestProjectChain(t *testing.T) {
 	})
 }
 
-// TestServiceRoles mirrors project-roles.e2e-spec.ts against the contract
-// group: service-role class CRUD (gitlab accessLevel mapping).
-func TestServiceRoles(t *testing.T) {
-	t.Cleanup(func() { del(t, gitlabRoleGVK, "gitlab-e2e-reporter") })
-	applyObject(t, fromYAML(t, `apiVersion: rbac.gitlab.cloud-pi-native.fr/v1alpha1
-kind: Role
-metadata:
-  name: gitlab-e2e-reporter
-  labels:
-    cloud-pi-native.fr/service-role: "true"
-spec:
-  role: readonly
-  accessLevel: 20
-  projectMemberGroup: /console/readonly
-`))
-	if out := field(t, get(t, gitlabRoleGVK, "gitlab-e2e-reporter"), "spec", "accessLevel"); out != "20" {
-		t.Fatalf("accessLevel: %q", out)
-	}
-	patch(t, gitlabRoleGVK, "gitlab-e2e-reporter", `{"spec":{"accessLevel":30}}`)
-	if out := field(t, get(t, gitlabRoleGVK, "gitlab-e2e-reporter"), "spec", "accessLevel"); out != "30" {
-		t.Fatalf("accessLevel after patch: %q", out)
-	}
-	del(t, gitlabRoleGVK, "gitlab-e2e-reporter")
-}
-
 // TestIntegrations mirrors project-integrations.e2e-spec.ts.
 func TestIntegrations(t *testing.T) {
 	t.Cleanup(func() { del(t, svcGVK, "detonation-keycloak") })
@@ -396,7 +370,6 @@ func TestRBAC(t *testing.T) {
 		"cpin:project-members-admin", "cpin:project-integrations-admin",
 		"cpin:project-secrets-admin", "cpin:environment-admin",
 		"cpin-admin:operator", "cpin-admin:reader", "kro:cpin-orchestrator",
-		"kro:cpin-service-roles",
 	} {
 		rules, ok, _ := unstructured.NestedSlice(get(t, croleGVK, role).Object, "rules")
 		if !ok || len(rules) == 0 {

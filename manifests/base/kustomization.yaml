@@ -8,7 +8,5 @@ resources:
   - rgds/integration.yaml
   - rgds/project-secret.yaml
   - rgds/environment.yaml
-  - rgds/gitlab-role.yaml
-  - rgds/harbor-role.yaml
   - rbac.yaml
   - secret.yaml
