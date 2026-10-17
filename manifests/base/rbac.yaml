@@ -1,135 +1,227 @@
-# Fine-grained RBAC mirroring console module split (apps/server-nestjs/
-# src/modules/project-*): distinct ClusterRoles per concern so platform
-# teams can delegate e.g. member management without project mutation.
-# All roles aggregate into cpin:project-full (backend-rbac.yaml).
-
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-read
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projects","zones","clusters","stages"]
-  verbs: ["get","list","watch"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projects
+  - zones
+  - clusters
+  - stages
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-write
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projects"]
-  verbs: ["create","update","patch","delete"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projects
+  verbs:
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-roles-admin
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projectroles"]
-  verbs: ["get","list","watch","create","update","patch","delete"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projectroles
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-members-admin
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projectmembers"]
-  verbs: ["get","list","watch","create","update","patch","delete"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projectmembers
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-integrations-admin
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["integrations"]
-  verbs: ["get","list","watch","create","update","patch","delete"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - integrations
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:project-secrets-admin
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projectsecrets"]
-  verbs: ["get","list","watch","create","update","patch","delete"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projectsecrets
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin:environment-admin
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["environments"]
-  verbs: ["get","list","watch","create","update","patch","delete"]
-# kro orchestrates the per-service role API groups (rbac.<svc>.cloud-pi-native.fr)
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - environments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kro:cpin-service-roles
 rules:
-- apiGroups: ["rbac.gitlab.cloud-pi-native.fr", "rbac.harbor.cloud-pi-native.fr", "rbac.nexus.cloud-pi-native.fr", "rbac.sonarqube.cloud-pi-native.fr", "rbac.vault.cloud-pi-native.fr", "rbac.argocd.cloud-pi-native.fr", "rbac.keycloak.cloud-pi-native.fr"]
-  resources: ["roles"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups:
+  - rbac.gitlab.cloud-pi-native.fr
+  - rbac.harbor.cloud-pi-native.fr
+  - rbac.nexus.cloud-pi-native.fr
+  - rbac.sonarqube.cloud-pi-native.fr
+  - rbac.vault.cloud-pi-native.fr
+  - rbac.argocd.cloud-pi-native.fr
+  - rbac.keycloak.cloud-pi-native.fr
+  resources:
+  - roles
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
-# kro reads native Roles/RoleBindings for externalRef collections and creates
-# them for the standard-role seeds and group bindings
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kro:cpin-native-rbac
 rules:
-- apiGroups: ["rbac.authorization.k8s.io"]
-  resources: ["roles", "rolebindings"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
----
-# Admin roles as native ClusterRoles (console admin-role module parity):
-# platform-level personas granted cluster-wide read/write scopes.
+- apiGroups:
+  - rbac.authorization.k8s.io
+  resources:
+  - roles
+  - rolebindings
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin-admin:operator
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projects", "environments", "projectmembers", "integrations", "projectsecrets", "clusters", "zones", "stages"]
-  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projects
+  - environments
+  - projectmembers
+  - integrations
+  - projectsecrets
+  - clusters
+  - zones
+  - stages
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: cpin-admin:reader
 rules:
-- apiGroups: ["cloud-pi-native.fr"]
-  resources: ["projects", "environments", "projectmembers", "integrations", "projectsecrets", "clusters", "zones", "stages"]
-  verbs: ["get", "list", "watch"]
-
-# backend chain RBAC (kro orchestrator + PKO workspace)
-# kro needs rights over the API groups it orchestrates (CPN Project + Pulumi)
-# and the workspace agent needs TokenReview (PKO grpc auth).
+- apiGroups:
+  - cloud-pi-native.fr
+  resources:
+  - projects
+  - environments
+  - projectmembers
+  - integrations
+  - projectsecrets
+  - clusters
+  - zones
+  - stages
+  verbs:
+  - get
+  - list
+  - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kro:cpin-orchestrator
 rules:
-- apiGroups: ["cloud-pi-native.fr", "pulumi.com"]
-  resources: ["*"]
-  verbs: ["*"]
-
+- apiGroups:
+  - cloud-pi-native.fr
+  - pulumi.com
+  resources:
+  - '*'
+  verbs:
+  - '*'
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -142,9 +234,7 @@ subjects:
 - kind: ServiceAccount
   name: kro
   namespace: kro-system
-
 ---
-
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:

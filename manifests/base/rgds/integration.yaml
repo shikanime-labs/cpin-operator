@@ -1,0 +1,79 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-integration
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Integration
+    scope: Namespaced
+    spec:
+      projectRef:
+        group: cloud-pi-native.fr
+        kind: Project
+        name: string
+      service: string
+      enabled: boolean
+      programRef:
+        group: pulumi.com
+        kind: Program
+        name: string
+    status:
+      state: ${stack.status.?state.orValue("Pending")}
+  resources:
+  - id: project
+    externalRef:
+      apiVersion: cloud-pi-native.fr/v1alpha1
+      kind: Project
+      metadata:
+        name: ${schema.spec.projectRef.name}
+        namespace: ${schema.metadata.namespace}
+  - id: roles
+    externalRef:
+      apiVersion: rbac.authorization.k8s.io/v1
+      kind: Role
+      metadata:
+        selector:
+          matchExpressions:
+          - key: cloud-pi-native.fr/project
+            operator: In
+            values:
+            - ${schema.spec.projectRef.name}
+  - id: environments
+    externalRef:
+      apiVersion: cloud-pi-native.fr/v1alpha1
+      kind: Environment
+      metadata:
+        selector:
+          matchExpressions:
+          - key: cloud-pi-native.fr/project
+            operator: In
+            values:
+            - ${schema.spec.projectRef.name}
+  - id: stack
+    includeWhen: ${schema.spec.enabled}
+    template:
+      apiVersion: pulumi.com/v1
+      kind: Stack
+      metadata:
+        name: ${schema.spec.projectRef.name}-${schema.spec.service}
+      spec:
+        backend: file:///share
+        stack: ${schema.spec.projectRef.name}-${schema.spec.service}
+        programRef:
+          name: ${schema.spec.programRef.name}
+        config:
+          projectName: ${schema.spec.projectRef.name}
+          projectSlug: ${project.spec.slug}
+          projectOwner: ${project.spec.owner}
+          roles: ${roles.map(r, r.metadata.name).join(",")}
+          environments: ${environments.map(e, e.metadata.name + "@" + e.spec.clusterRef.name).join(",")}
+        envRefs:
+          PULUMI_CONFIG_PASSPHRASE:
+            type: Secret
+            secret:
+              name: pulumi-passphrase
+              key: PULUMI_CONFIG_PASSPHRASE
+        destroyOnFinalize: true
+        resyncFrequencySeconds: 300

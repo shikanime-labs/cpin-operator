@@ -4,8 +4,7 @@ metadata:
   name: cpin-program-argocd
 program:
   name: cpin-argocd
-  description: "ArgoCD provisioning from console audit \u2014 environment values rendered\
-    \ into the infra Git repo"
+  description: "ArgoCD provisioning from console audit \u2014 environment values rendered into the infra Git repo"
   runtime: yaml
   config:
     projectName:

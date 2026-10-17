@@ -1,0 +1,37 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-gitlab-role
+spec:
+  schema:
+    group: rbac.gitlab.cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Role
+    scope: Cluster
+    spec:
+      role: string
+      accessLevel: integer
+      projectMemberGroup: string
+    status:
+      state: ${stack.status.?state.orValue("Pending")}
+  resources:
+  - id: stack
+    template:
+      apiVersion: pulumi.com/v1
+      kind: Stack
+      metadata:
+        name: gitlab
+        namespace: default
+      spec:
+        backend: file:///share
+        stack: gitlab
+        programRef:
+          name: cpin-program-gitlab
+        envRefs:
+          PULUMI_CONFIG_PASSPHRASE:
+            type: Secret
+            secret:
+              name: pulumi-passphrase
+              key: PULUMI_CONFIG_PASSPHRASE
+        destroyOnFinalize: true
+        resyncFrequencySeconds: 300

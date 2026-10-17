@@ -1,0 +1,30 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-environment
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Environment
+    scope: Namespaced
+    spec:
+      projectRef:
+        group: cloud-pi-native.fr
+        kind: Project
+        name: string
+      clusterRef:
+        group: cloud-pi-native.fr
+        kind: Cluster
+        name: string
+      stageRef:
+        group: cloud-pi-native.fr
+        kind: Stage
+        name: string
+      resources:
+        requests:
+          cpu: string
+          memory: string
+          gpu: integer | default=0
+    status: {}
+  resources: []

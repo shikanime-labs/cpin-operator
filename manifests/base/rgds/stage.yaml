@@ -1,0 +1,13 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-stage
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Stage
+    scope: Cluster
+    spec: {}
+    status: {}
+  resources: []

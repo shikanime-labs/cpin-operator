@@ -1,5 +1,3 @@
-# Full example deployment: Project + attached services and environment.
-# Attach sub-resources AFTER the Project exists (externalRef waits for it).
 apiVersion: cloud-pi-native.fr/v1alpha1
 kind: Project
 metadata:
@@ -48,6 +46,6 @@ spec:
     name: dev
   resources:
     requests:
-      cpu: "2"
+      cpu: '2'
       memory: 4Gi
       gpu: 0

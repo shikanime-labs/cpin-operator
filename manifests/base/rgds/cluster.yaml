@@ -1,0 +1,23 @@
+apiVersion: kro.run/v1alpha1
+kind: ResourceGraphDefinition
+metadata:
+  name: cpin-cluster
+spec:
+  schema:
+    group: cloud-pi-native.fr
+    apiVersion: v1alpha1
+    kind: Cluster
+    scope: Cluster
+    spec:
+      label: string
+      privacy: string | default="public"
+      secretName: string
+      zoneRef:
+        group: cloud-pi-native.fr
+        kind: Zone
+        name: string
+      memory: integer | default=0
+      cpu: integer | default=0
+      gpu: integer | default=0
+    status: {}
+  resources: []
