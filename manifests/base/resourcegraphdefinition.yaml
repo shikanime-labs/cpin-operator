@@ -93,7 +93,6 @@ spec:
 
 ---
 
----
 apiVersion: kro.run/v1alpha1
 kind: ResourceGraphDefinition
 metadata:

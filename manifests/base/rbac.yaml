@@ -4,8 +4,6 @@
 # All roles aggregate into cpin:project-full (backend-rbac.yaml).
 
 ---
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -15,8 +13,6 @@ rules:
   resources: ["projects","zones","clusters","stages"]
   verbs: ["get","list","watch"]
 
----
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -28,8 +24,6 @@ rules:
   verbs: ["create","update","patch","delete"]
 
 ---
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -39,8 +33,6 @@ rules:
   resources: ["projectroles"]
   verbs: ["get","list","watch","create","update","patch","delete"]
 
----
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -52,8 +44,6 @@ rules:
   verbs: ["get","list","watch","create","update","patch","delete"]
 
 ---
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -64,8 +54,6 @@ rules:
   verbs: ["get","list","watch","create","update","patch","delete"]
 
 ---
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -75,8 +63,6 @@ rules:
   resources: ["projectsecrets"]
   verbs: ["get","list","watch","create","update","patch","delete"]
 
----
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -111,7 +97,6 @@ rules:
 # Admin roles as native ClusterRoles (console admin-role module parity):
 # platform-level personas granted cluster-wide read/write scopes.
 ---
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -120,8 +105,6 @@ rules:
 - apiGroups: ["cloud-pi-native.fr"]
   resources: ["projects", "environments", "projectmembers", "projectservices", "projectsecrets", "clusters", "zones", "stages"]
   verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
----
----
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -136,7 +119,6 @@ rules:
 # kro needs rights over the API groups it orchestrates (CPN Project + Pulumi)
 # and the workspace agent needs TokenReview (PKO grpc auth).
 ---
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -148,8 +130,6 @@ rules:
 
 ---
 
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -165,8 +145,6 @@ subjects:
 
 ---
 
----
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
