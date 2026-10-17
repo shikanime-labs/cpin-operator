@@ -7,3 +7,4 @@ helmCharts:
   repo: https://helm.releases.hashicorp.com
   releaseName: vault
   namespace: vault
+  version: 0.34.1

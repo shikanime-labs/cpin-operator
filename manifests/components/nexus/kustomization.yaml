@@ -5,6 +5,6 @@ resources:
 helmCharts:
 - name: nexus-repository-manager
   repo: https://sonatype.github.io/helm3-charts/
-  version: 5.14.0
+  version: 64.2.0
   releaseName: nexus
   namespace: nexus

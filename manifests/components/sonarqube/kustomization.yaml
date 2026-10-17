@@ -7,3 +7,8 @@ helmCharts:
   repo: https://SonarSource.github.io/helm-chart-sonarqube
   releaseName: sonarqube
   namespace: sonarqube
+  version: 2026.5.1002
+  valuesInline:
+    monitoringPasscode: CHANGE_ME
+    community:
+      enabled: true
