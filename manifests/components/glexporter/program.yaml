@@ -4,7 +4,6 @@ metadata:
   name: cpin-program-glexporter
 program:
   name: cpin-glexporter
-  description: "glexporter install plane \u2014 carved from the socle mega-program"
   runtime: yaml
   config:
     domain:

@@ -81,7 +81,6 @@ func refreshMapper(t *testing.T) {
 	rmap = restmapper.NewDiscoveryRESTMapper(gr)
 }
 
-// mapping resolves a GVK; refreshes discovery once if stale (CRDs land mid-suite).
 func mapping(t *testing.T, gvk schema.GroupVersionKind) *meta.RESTMapping {
 	t.Helper()
 	setup(t)
@@ -204,8 +203,6 @@ func condTrue(u *unstructured.Unstructured, condType string) bool {
 	return false
 }
 
-// waitTrue tolerates transient errors (weak-cluster TLS timeouts) and NotFound
-// (resource still being created by the controller chain).
 func waitTrue(t *testing.T, gvk schema.GroupVersionKind, name, condType string, timeout time.Duration) {
 	t.Helper()
 	setup(t)
@@ -222,7 +219,6 @@ func waitTrue(t *testing.T, gvk schema.GroupVersionKind, name, condType string, 
 	t.Fatalf("%s %s %s not True after %s", gvk.Kind, name, condType, timeout)
 }
 
-// TestInstall gates the suite on the dependency chain being present.
 func TestInstall(t *testing.T) {
 	for _, crdName := range []string{
 		"resourcegraphdefinitions.kro.run",
@@ -235,8 +231,7 @@ func TestInstall(t *testing.T) {
 	get(t, rgdGVK, "cpin-project")
 }
 
-// TestProjectChain mirrors project.e2e-spec.ts: apply overlay, create project,
-// per-service Stacks go Ready, outputs project into status, delete cascades.
+// TestProjectChain: apply overlay, project goes Ready, delete cascades.
 func TestProjectChain(t *testing.T) {
 	overlay := os.Getenv("CPIN_OVERLAY")
 	if overlay == "" {
@@ -303,7 +298,7 @@ func TestProjectChain(t *testing.T) {
 	})
 }
 
-// TestIntegrations mirrors project-integrations.e2e-spec.ts.
+// TestIntegrations.
 func TestIntegrations(t *testing.T) {
 	t.Cleanup(func() { del(t, svcGVK, "detonation-keycloak") })
 	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
@@ -321,7 +316,7 @@ spec:
 	del(t, svcGVK, "detonation-keycloak")
 }
 
-// TestProjectSecrets mirrors project-secrets.e2e-spec.ts.
+// TestProjectSecrets.
 func TestProjectSecrets(t *testing.T) {
 	t.Cleanup(func() { del(t, secretGVK, "detonation-sonar-token") })
 	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
@@ -339,7 +334,7 @@ spec:
 	del(t, secretGVK, "detonation-sonar-token")
 }
 
-// TestEnvironments mirrors environment coverage: cluster + quota fields.
+// TestEnvironments: clusterRef + quota fields.
 func TestEnvironments(t *testing.T) {
 	t.Cleanup(func() { del(t, envGVK, "detonation-dev") })
 	applyObject(t, fromYAML(t, `apiVersion: cloud-pi-native.fr/v1alpha1
