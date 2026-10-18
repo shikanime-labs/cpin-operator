@@ -2,14 +2,3 @@ apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 resources:
 - program.yaml
-- namespace-sonarqube.yaml
-helmCharts:
-- name: sonarqube
-  repo: https://SonarSource.github.io/helm-chart-sonarqube
-  releaseName: sonarqube
-  namespace: sonarqube
-  version: 2026.5.1002
-  valuesInline:
-    monitoringPasscode: CHANGE_ME
-    community:
-      enabled: true

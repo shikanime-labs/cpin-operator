@@ -10,5 +10,4 @@ components:
 - ../../components/nexus
 - ../../components/sonarqube
 - ../../components/glexporter
-- ../../components/zone
 - ../../components/vault

@@ -1,0 +1,73 @@
+apiVersion: kustomize.config.k8s.io/v1alpha1
+kind: Component
+helmCharts:
+- name: gitlab
+  repo: https://charts.gitlab.io
+  version: 10.5.0
+  releaseName: gitlab
+  namespace: gitlab
+  valuesInline:
+    certmanager-issuer:
+      email: admin@shikanime.studio
+    global:
+      redis:
+        host: redis.gitlab.svc.cluster.local
+      psql:
+        host: cnpg-cnpg-system.cnpg-system.svc.cluster.local
+        password:
+          secret: gitlab-psql
+          key: password
+        serviceName: ''
+      gitaly:
+        enabled: true
+        external: []
+        storage:
+          default:
+            path: /var/opt/gitlab/repo
+            secret: gitaly-secret
+      gitlab:
+        enabled: false
+      registry:
+        bucket: registry
+        enabled: false
+      gitlab-shell:
+        enabled: false
+      kas:
+        enabled: false
+      sidekiq:
+        enabled: false
+      webservice:
+        enabled: false
+      gitlab-exporter:
+        enabled: false
+      grafana:
+        enabled: false
+      minio:
+        enabled: false
+      prometheus:
+        enabled: false
+      nginx-ingress:
+        enabled: false
+      appConfig:
+        object_store:
+          enabled: false
+        artifacts:
+          bucket: ''
+          enabled: false
+        lfs:
+          bucket: ''
+          enabled: false
+        uploads:
+          bucket: ''
+          enabled: false
+        packages:
+          bucket: ''
+          enabled: false
+      objectStorage:
+        enabled: false
+    registry:
+      enabled: false
+    minio:
+      enabled: false
+resources:
+- namespace-gitlab.yaml
