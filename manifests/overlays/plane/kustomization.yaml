@@ -2,12 +2,12 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
 - ../../base
-- ../../components/argocd/plane.yaml
-- ../../components/gitlab/plane.yaml
-- ../../components/harbor/plane.yaml
-- ../../components/keycloak/plane.yaml
-- ../../components/nexus/plane.yaml
-- ../../components/sonarqube/plane.yaml
-- ../../components/vault/plane.yaml
-- ../../components/zone/plane.yaml
-components: []
+components:
+- argocd
+- gitlab
+- harbor
+- keycloak
+- nexus
+- sonarqube
+- vault
+- zone
