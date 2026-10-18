@@ -10,16 +10,16 @@ spec:
     scope: Namespaced
     spec:
       projectRef:
-        group: cloud-pi-native.fr
-        kind: Project
+        group: string
+        kind: string
         name: string
       clusterRef:
-        group: cloud-pi-native.fr
-        kind: Cluster
+        group: string
+        kind: string
         name: string
       stageRef:
-        group: cloud-pi-native.fr
-        kind: Stage
+        group: string
+        kind: string
         name: string
       resources:
         requests:

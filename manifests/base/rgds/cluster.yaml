@@ -13,8 +13,8 @@ spec:
       privacy: string | default="public"
       secretName: string
       zoneRef:
-        group: cloud-pi-native.fr
-        kind: Zone
+        group: string
+        kind: string
         name: string
       memory: integer | default=0
       cpu: integer | default=0

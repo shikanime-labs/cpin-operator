@@ -10,13 +10,13 @@ spec:
     scope: Namespaced
     spec:
       projectRef:
-        group: cloud-pi-native.fr
-        kind: Project
+        group: string
+        kind: string
         name: string
       service: string
       programRef:
-        group: pulumi.com
-        kind: Program
+        group: string
+        kind: string
         name: string
     status:
       state: ${stack.status.?state.orValue("Pending")}
