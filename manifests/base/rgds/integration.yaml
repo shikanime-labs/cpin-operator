@@ -19,7 +19,7 @@ spec:
         kind: string
         name: string
     status:
-      state: ${stack.status.?state.orValue("Pending")}
+      state: ${stack.status.?lastUpdate.?state.orValue("Pending")}
   resources:
   - id: project
     externalRef:
