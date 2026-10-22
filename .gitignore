@@ -299,3 +299,6 @@ $RECYCLE.BIN/
 
 .pre-commit-config.yaml
 __debug_bin*
+
+# Vendored helm chart sources: components inflate from their repo: URLs
+manifests/cpin-stack/components/*/charts/
