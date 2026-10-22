@@ -70,5 +70,5 @@ helmCharts:
     minio:
       enabled: false
 resources:
-- namespace-gitlab.yaml
+- ns.yaml
 - program.yaml
