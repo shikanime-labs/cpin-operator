@@ -7,5 +7,5 @@ helmCharts:
   releaseName: nexus
   namespace: nexus
 resources:
-- namespace-nexus.yaml
+- ns.yaml
 - program.yaml

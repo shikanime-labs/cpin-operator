@@ -1,13 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- rgds/project.yaml
-- rgds/zone.yaml
-- rgds/stage.yaml
-- rgds/cluster.yaml
-- rgds/integration.yaml
-- rgds/project-secret.yaml
-- rgds/environment.yaml
+- rgd.yaml
 - rbac.yaml
 - secret.yaml
-- crd-bootstrap.yaml
+- crd.yaml

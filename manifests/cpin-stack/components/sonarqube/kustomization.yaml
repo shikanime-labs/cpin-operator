@@ -11,5 +11,5 @@ helmCharts:
     community:
       enabled: true
 resources:
-- namespace-sonarqube.yaml
+- ns.yaml
 - program.yaml

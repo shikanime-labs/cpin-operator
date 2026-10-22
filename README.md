@@ -62,11 +62,12 @@ manifests/cpin-operator/base/       operator plumbing: RGDs (Project seeds
                                     Role/Member/Service/Secret/Environment),
                                     rbac.yaml (fine-grained + standard-role
                                     ClusterRoles + backend chain RBAC),
-                                    crd-bootstrap.yaml, secret.yaml
+                                    rgd.yaml (multi-doc), crd.yaml, ns-style
+                                    resources named per org convention
 manifests/cpin-stack/components/<svc>/
                                     one kustomize Component per service:
-                                    helm chart deployment (<svc> plane,
-                                    valuesInline) + pulumi.com/v1 Program CR
+                                    ns.yaml, program.yaml, helm chart
+                                    deployment (valuesInline)
 manifests/cpin-stack/base/          full-stack entrypoint: cpin-operator/base +
                                     all service components + zone
 e2e/                                Go e2e suite mirroring console

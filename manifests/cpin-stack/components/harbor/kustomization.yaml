@@ -7,5 +7,5 @@ helmCharts:
   releaseName: harbor
   namespace: harbor
 resources:
-- namespace-harbor.yaml
+- ns.yaml
 - program.yaml

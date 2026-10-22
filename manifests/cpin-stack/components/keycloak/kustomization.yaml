@@ -7,5 +7,5 @@ helmCharts:
   releaseName: keycloak
   namespace: keycloak
 resources:
-- namespace-keycloak.yaml
+- ns.yaml
 - program.yaml

@@ -21,7 +21,4 @@ helmCharts:
   releaseName: prometheus
   namespace: monitoring
 resources:
-- namespace-cert-manager.yaml
-- namespace-cnpg-system.yaml
-- namespace-kyverno.yaml
-- namespace-monitoring.yaml
+- ns.yaml
