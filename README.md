@@ -37,12 +37,12 @@ may work.
    ```
 
 4. **RBAC for the chain** (kro creates/owns Stacks; PKO workspaces need
-   TokenReview): included in `manifests/base/rbac.yaml`.
+   TokenReview): included in `manifests/cpin-operator/rbac.yaml`.
 
 5. **This repo**:
 
    ```sh
-   kubectl apply -k manifests/overlays/default
+   kubectl kustomize --enable-helm manifests/cpin-stack | kubectl apply -f -
    kubectl wait --for=condition=Established crd/projects.cloud-pi-native.fr
    ```
 
@@ -52,25 +52,26 @@ e2e/project.yaml && watch kubectl get stacks`.
 ## Layout
 
 ```
-manifests/base/resourcegraphdefinition.yaml
-                                    multi-doc RGDs: Project (seeds the five
-                                    standard ProjectRoles), Zone/Cluster/Stage,
-                                    project-scoped Role/Member/Service/Secret/
-                                    Environment
-manifests/base/rbac.yaml            fine-grained + standard-role ClusterRoles,
-                                    backend chain RBAC (single rbac.yaml per
-                                    studio convention)
-manifests/components/<svc>/           pulumi.com/v1 Program CRs, one kustomize
-                                    Component per service (<svc>/program.yaml);
-                                    overlays compose them per cluster
-manifests/overlays/<cluster>/       cluster entrypoint (base + selected service
-                                    components); default overlay: default/
+manifests/cpin-operator/            operator plumbing: RGDs (Project seeds
+                                    the five standard ProjectRoles,
+                                    Zone/Cluster/Stage, project-scoped
+                                    Role/Member/Service/Secret/Environment),
+                                    rbac.yaml (fine-grained + standard-role
+                                    ClusterRoles + backend chain RBAC),
+                                    crd-bootstrap.yaml, secret.yaml
+manifests/cpin-stack/components/<svc>/
+                                    one kustomize Component per service:
+                                    helm chart deployment (<svc> plane,
+                                    valuesInline) + pulumi.com/v1 Program CR
+manifests/cpin-stack/               full-stack entrypoint: cpin-operator +
+                                    all service components + zone
 e2e/                                Go e2e suite mirroring console
                                     apps/server-nestjs/test coverage
 ```
 
-Deploy path: Flux `clusters/<c>/components/cpin/ks.yaml` in
-shikanime-labs/manifests points at `./manifests/overlays/<c>`.
+Deploy entrypoint: `./manifests/cpin-stack`, consumed by any helm-enabled
+kustomize renderer (Flux `Kustomization` in shikanime-labs/manifests points
+here; stock kubectl pipes `kubectl kustomize --enable-helm` into `apply`).
 
 ## CRD model (console entities → KRO)
 
@@ -101,19 +102,18 @@ integer bitmasks (decode at API layer).
 
 ## RBAC
 
-Fine-grained roles in `manifests/base/project-scoped-rbac.yaml` mirror the
+Fine-grained roles in `manifests/cpin-operator/rbac.yaml` mirror the
 console module split, so a platform team can own member management without
 project mutation rights:
 
 ```sh
-kubectl auth reconcile -f manifests/base/project-scoped-rbac.yaml
+kubectl auth reconcile -f manifests/cpin-operator/rbac.yaml
 ```
 
 ## E2E
 
 ```sh
 go test -tags e2e -v -timeout 30m        # against the current kubectl context
-CPIN_OVERLAY=<cluster> go test ...       # non-default overlay
 ```
 
 Coverage mirrors console `apps/server-nestjs/test`: project lifecycle +
@@ -124,8 +124,8 @@ KRO→PKO chain, roles, members, services, secrets, environments, RBAC roles.
 - `<resource-name>.yaml` with multi-doc files per resource; RBAC exempt as a
   single `rbac.yaml`, sorted `resources:` lists
 - Programs are CRDs, not generated artifacts — edit
-  `manifests/components/<svc>/program.yaml` directly
-- Render gate: `kubectl kustomize manifests/overlays/<cluster>`
+  `manifests/cpin-stack/components/<svc>/program.yaml` directly
+- Render gate: `kubectl kustomize --enable-helm manifests/cpin-stack`
 - Beyond POC: replace `backend: file:///share` per Stack with a real backend
 
 ## Commit Style
