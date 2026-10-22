@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/kustomize/api/filesys"
 	"sigs.k8s.io/kustomize/api/krusty"
+	kusttypes "sigs.k8s.io/kustomize/api/types"
 	"sigs.k8s.io/yaml"
 )
 
@@ -39,16 +40,16 @@ var (
 )
 
 var (
-	projectGVK = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Project"}
+	projectGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Project"}
 	rbacRoleGVK    = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "Role"}
 	rbacBindingGVK = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "RoleBinding"}
-	svcGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Integration"}
-	secretGVK  = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectSecret"}
-	envGVK     = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Environment"}
-	stackGVK   = schema.GroupVersionKind{Group: "pulumi.com", Version: "v1", Kind: "Stack"}
-	rgdGVK     = schema.GroupVersionKind{Group: "kro.run", Version: "v1alpha1", Kind: "ResourceGraphDefinition"}
-	crdGVK     = schema.GroupVersionKind{Group: "apiextensions.k8s.io", Version: "v1", Kind: "CustomResourceDefinition"}
-	croleGVK   = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "ClusterRole"}
+	svcGVK         = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Integration"}
+	secretGVK      = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "ProjectSecret"}
+	envGVK         = schema.GroupVersionKind{Group: "cloud-pi-native.fr", Version: "v1alpha1", Kind: "Environment"}
+	stackGVK       = schema.GroupVersionKind{Group: "pulumi.com", Version: "v1", Kind: "Stack"}
+	rgdGVK         = schema.GroupVersionKind{Group: "kro.run", Version: "v1alpha1", Kind: "ResourceGraphDefinition"}
+	crdGVK         = schema.GroupVersionKind{Group: "apiextensions.k8s.io", Version: "v1", Kind: "CustomResourceDefinition"}
+	croleGVK       = schema.GroupVersionKind{Group: "rbac.authorization.k8s.io", Version: "v1", Kind: "ClusterRole"}
 )
 
 func setup(t *testing.T) {
@@ -131,7 +132,10 @@ func applyObject(t *testing.T, obj *unstructured.Unstructured) {
 func applyKustomize(t *testing.T, dir string) {
 	t.Helper()
 	setup(t)
-	rm, err := krusty.MakeKustomizer(krusty.MakeDefaultOptions()).Run(filesys.MakeFsOnDisk(), dir)
+	opts := krusty.MakeDefaultOptions()
+	opts.PluginConfig = kusttypes.EnabledPluginConfig(kusttypes.BploUseStaticallyLinked)
+	opts.PluginConfig.HelmConfig.Command = "helm"
+	rm, err := krusty.MakeKustomizer(opts).Run(filesys.MakeFsOnDisk(), dir)
 	if err != nil {
 		t.Fatalf("kustomize build %s: %v", dir, err)
 	}
@@ -233,15 +237,11 @@ func TestInstall(t *testing.T) {
 
 // TestProjectChain: apply overlay, project goes Ready, delete cascades.
 func TestProjectChain(t *testing.T) {
-	overlay := os.Getenv("CPIN_OVERLAY")
-	if overlay == "" {
-		overlay = "default"
-	}
 	name := "detonation"
 	t.Cleanup(func() { del(t, projectGVK, name) })
 
 	t.Run("apply", func(t *testing.T) {
-		applyKustomize(t, "../manifests/overlays/"+overlay)
+		applyKustomize(t, "../manifests/cpin-stack/base")
 	})
 	t.Run("full-example-applied", func(t *testing.T) {
 		b, err := os.ReadFile("full-example.yaml")
